@@ -194,4 +194,20 @@ screen.drawText(Swidth-2-stringPixelLength(scoreString),Sheight-8,scoreString)
 ```
 this should be enough information for the player to use the transponder locator efficiently. With this the project is feature complete!
 
+From playtesting it made sense to only average over the last so many approximations. Code reflects this now:
+```lua
+averagedApproximation = {x = 0, y = 0, number = 0}
+for i=0,19,1 do --only ever using the last 20 approximations in hope of better results
+    approximation = approximations[#approximations-i]
+    if approximation then
+        if not isNan(approximation.x) and not isNan(approximation.y) then --check for NAN type and maybe prevent blue screen
+            averagedApproximation.x = averagedApproximation.x + approximation.x
+            averagedApproximation.y = averagedApproximation.y + approximation.y
+            averagedApproximation.number = averagedApproximation.number + 1
+        end
+    end
+end
+```
+maybe changing the values around a little bit tomorrow but that is pretty much it!
+
 
