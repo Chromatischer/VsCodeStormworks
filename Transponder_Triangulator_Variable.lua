@@ -18,8 +18,8 @@ do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
     simulator = simulator
     simulator:setScreen(1, "2x2")
-    simulator:setScreen(2, "3x3")
-    simulator:setScreen(3, "3x2")
+    --simulator:setScreen(2, "3x3")
+    --simulator:setScreen(3, "3x2")
     simulator:setProperty("ExampleNumberProperty", 123)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
@@ -68,11 +68,24 @@ end}, {x=2,y=12,string="-",funct = function ()
     zoom = zoom - 1 > 0 and zoom -1 or zoom
 end}, {x=2,y=23,string="T",funct = function ()
     showTransponderLocation = not showTransponderLocation
+end}, {x=2,y=33,string="C",funct = function ()
+    centerOnPlayer = not centerOnPlayer
+end}, {x=2,y=43,string="N",funct = function ()
+    averagedApproximation = {x=0,y=0,number=0}
+    currentApproxPosition = {x=0,y=0}
+    transponderPulsePositions = {}
+    approximations = {}
 end}}
 mapCenterX = 0
 mapCenterY = 0
 centerOnPlayer = true
 changeTime = 50
+averagedApproximation = {x=0, y=0, number = 0}
+useAveragedApproximationNumber = 5
+meanError = 0
+meanErrorEvaluationFactor = 2
+currentApproxPosition = {x = 0, y = 0}
+mapMovementF = 0.01
 function onTick()
     ticks = ticks + 1
     isPressed = input.getBool(1)
@@ -142,15 +155,50 @@ function onTick()
     --#endregion
 
     --#region averaging the approximations
-    averagedApproximation = {x=0,y=0}
+    averagedApproximation = {x = 0, y = 0, number = 0}
     for index, approximation in ipairs(approximations) do
         if not isNan(approximation.x) and not isNan(approximation.y) then --check for NAN type and maybe prevent blue screen
             averagedApproximation.x = averagedApproximation.x + approximation.x
             averagedApproximation.y = averagedApproximation.y + approximation.y
+            averagedApproximation.number = averagedApproximation.number + 1
         end
     end
     averagedApproximation.x = averagedApproximation.x / #approximations
     averagedApproximation.y = averagedApproximation.y / #approximations
+    --#endregion
+
+    --#region calculating Mean Error (ME)
+    meanError = 0
+    meanErrorsCollected = 0
+    if averagedApproximation.number > useAveragedApproximationNumber then -- only calculating mean Error if the number of averages is sufficient
+        for index, approximation in ipairs(approximations) do
+            if not isNan(approximation.x) and not isNan(approximation.y) then
+                --mean error is every error added up and then divided by the number of errors
+                meanError = meanError + math.abs(distanceBetweenPoints(approximation.x,approximation.y,averagedApproximation.x,averagedApproximation.y))
+                meanErrorsCollected = meanErrorsCollected + 1
+            end
+        end
+        meanError = meanError / meanErrorsCollected
+    end
+    --#endregion
+    
+    transponderScore = 50 - (meanError / meanErrorEvaluationFactor) --implementing a score for the transponder accuracy at any given time and red
+    transponderScore = transponderScore + (averagedApproximation.number - useAveragedApproximationNumber) * 10 --having a large number of averages should increase the score for every one more than the minimum by ten
+
+    --#region current approximate position
+    for i=#approximations,1,-1 do
+        approximation = approximations[i]
+        if not isNan(approximation.x) and not isNan(approximation.y) then
+            currentApproxPosition = approximation
+            break
+        else
+            if i == 1 then
+                currentApproxPosition = {x = 0, y = 0}
+                transponderScore = -999
+            end
+            transponderScore = transponderScore - 10
+        end
+    end
     --#endregion
 
     for index, button in ipairs(buttons) do
@@ -165,11 +213,18 @@ function onTick()
         end
     end
     pause_ticks_button = pause_ticks_button + 1
+    --#region map Centering
     if ticks <= 10 or centerOnPlayer then
         mapCenterX = gpsX
         mapCenterY = gpsY
+    elseif currentApproxPosition then
+        oldFactor = 1-mapMovementF
+        --slowly approaching the new map center and not jumping instantally
+        mapCenterX = mapCenterX * oldFactor + currentApproxPosition.x * mapMovementF
+        mapCenterY = mapCenterY * oldFactor + currentApproxPosition.y * mapMovementF
     end
     currentOnScreenX,currentOnScreenY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,gpsX,gpsY)
+    --#endregion
 end
 
 function onDraw()
@@ -182,13 +237,21 @@ function onDraw()
     --#endregion
 
     --#region draw line indicator to approximate transponder location
-    currentApproxPosition = approximations[#approximations]
-    if currentApproxPosition and showTransponderLocation then
-        approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,currentApproxPosition.x,currentApproxPosition.y)
+    if (currentApproxPosition and averagedApproximation) and showTransponderLocation and #transponderPulsePositions > 0 then
+        if averagedApproximation.number > useAveragedApproximationNumber then --if there is an averaged approximation then use it ofc
+            approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,averagedApproximation.x,averagedApproximation.y)
+        else
+            approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,currentApproxPosition.x,currentApproxPosition.y)
+        end
         screen.setColor(240,115,10,125)
-        screen.drawLine(currentOnScreenX,currentOnScreenY,approxOnMapX,approxOnMapY)
+        screen.drawLine(currentOnScreenX,currentOnScreenY,approxOnMapX,approxOnMapY) -- line indicator gps -> approx on map position
         screen.setColor(240,115,10)
+        --mean error as a circle that shows in what range the transponder could be
+        meanErrorOnScreenRadius = (meanError / zooms[zoom] / 1000) * Sheight
+        screen.drawCircle(approxOnMapX, approxOnMapY, meanErrorOnScreenRadius)
         screen.drawText(2,Sheight-8,math.floor(transponderPulsePositions[#transponderPulsePositions].range) .. "M")
+        scoreString = string.format("%03d",math.floor(transponderScore))
+        screen.drawText(Swidth-2-stringPixelLength(scoreString),Sheight-8,scoreString)
     end
     --#endregion
 

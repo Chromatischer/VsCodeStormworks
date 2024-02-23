@@ -115,3 +115,83 @@ averagedApproximation.x = averagedApproximation.x / #approximations
 averagedApproximation.y = averagedApproximation.y / #approximations
 ```
 where no NANs will be added to the average anymore!
+```lua
+if (currentApproxPosition or averagedApproximation) and showTransponderLocation then
+    if averagedApproximation.number > useAveragedApproximationNumber then --if there is an averaged approximation then use it ofc
+        approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,averagedApproximation.x,averagedApproximation.y)
+    else
+        approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,currentApproxPosition.x,currentApproxPosition.y)
+    end
+```
+it makes sense to also use the averaged approximations now which is implemented in the code above. Furthermore using averages is only useful if you have enough data averaged out that you get a result with the wanted quality. This is done by checking if the number of averages that went into the average approximation is greater then some constant defined before.
+
+One of the errors I encountered while playtesting was that the code would want to display the newest approximated position, even if it were NANs. this is avoided by iterating backwards from the last to the first index in the array and taking the latest possible approximate position that does not contain NANs which I did here:
+```lua
+for i=#approximations,1,-1 do
+    approximation = approximations[i]
+    if not isNan(approximation.x) and not isNan(approximation.y) then
+        currentApproxPosition = approximation
+        break
+    else
+        if i == 1 then
+            currentApproxPosition = {x = 0, y = 0}
+            transponderScore = -999
+        end
+        transponderScore = transponderScore - 10
+    end
+end
+```
+Also deducting points from the new ``transponderScore`` which should in theory show how accurate the system operates at the moment. For every approximation that contains NANs 10 points are deducted from the score. If all of the approximations are NANs (which should not happen) then the current approximation is reset and the score is set to ``-999``.
+
+A usual way to measure accuracy of test results is to calculate the ME or mean error which shows, how far off the average value is from the theoretical correct value. In my case since I want to figure the correct value out the only thing I have is my average approximation which should even out measurement tolerances. By adding up all the errors and then dividing by the number of errors tested for the mean error is calculated. I implemented this here:
+```lua
+meanError = 0
+meanErrorsCollected = 0
+if averagedApproximation.number > useAveragedApproximationNumber then -- only calculating mean Error if the number of averages is sufficient
+    for index, approximation in ipairs(approximations) do
+        if not isNan(approximation.x) and not isNan(approximation.y) then
+            --mean error is every error added up and then divided by the number of errors
+            meanError = meanError + math.abs(distanceBetweenPoints(approximation.x,approximation.y,averagedApproximation.x,averagedApproximation.y))
+            meanErrorsCollected = meanErrorsCollected + 1
+        end
+    end
+    meanError = meanError / meanErrorsCollected
+end
+```
+We again take the ``abs`` because we don't actually care in which direction we are off. Only by how much! This mean error is also used to calculate the approximation score.
+```lua
+transponderScore = 50 - (meanError / meanErrorEvaluationFactor) --implementing a score for the transponder accuracy at any given time and red
+```
+this is done right at the start of the evaluation using a Factor to dampen the effect. The score starts out at 50 in the beginning and bigger should mean better.
+```lua
+transponderScore = transponderScore + (averagedApproximation.number - useAveragedApproximationNumber) * 10 --having a large number of averages should increase the score for every one more than the minimum by ten
+```
+right after that more points are being added for having more averages used because that should increase accuracy.
+
+Adding the option to not center on the player but the current approximated position.
+```lua
+if ticks <= 10 or centerOnPlayer then
+    mapCenterX = gpsX
+    mapCenterY = gpsY
+elseif currentApproxPosition then
+    oldFactor = 1-mapMovementF
+    mapCenterX = mapCenterX * oldFactor + currentApproxPosition.x * mapMovementF
+    mapCenterY = mapCenterY * oldFactor + currentApproxPosition.y * mapMovementF
+end
+```
+Because of the jumpy nature of the approximations a ``mapMovementFactor`` is introduced which makes the mapCenter move more smoothly towards the new position from the old position.
+
+To indicate to the user how accurate the approximation is, we have two main ways one is the mean error which is now being displayed as a circle around the current best approximation with corresponding radius.
+```lua
+--mean error as a circle that shows in what range the transponder could be
+meanErrorOnScreenRadius = (meanError / zooms[zoom] / 1000) * Sheight
+screen.drawCircle(approxOnMapX, approxOnMapY, meanErrorOnScreenRadius)
+```
+The other way is through our ``transponderScore`` which is displayed as a string in the bottom right at the moment
+```lua
+scoreString = string.format("%03d",math.floor(transponderScore))
+screen.drawText(Swidth-2-stringPixelLength(scoreString),Sheight-8,scoreString)
+```
+this should be enough information for the player to use the transponder locator efficiently. With this the project is feature complete!
+
+
