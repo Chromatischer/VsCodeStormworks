@@ -144,8 +144,10 @@ function onTick()
     --#region averaging the approximations
     averagedApproximation = {x=0,y=0}
     for index, approximation in ipairs(approximations) do
-        averagedApproximation.x = averagedApproximation.x + approximation.x
-        averagedApproximation.y = averagedApproximation.y + approximation.y
+        if not isNan(approximation.x) and not isNan(approximation.y) then --check for NAN type and maybe prevent blue screen
+            averagedApproximation.x = averagedApproximation.x + approximation.x
+            averagedApproximation.y = averagedApproximation.y + approximation.y
+        end
     end
     averagedApproximation.x = averagedApproximation.x / #approximations
     averagedApproximation.y = averagedApproximation.y / #approximations

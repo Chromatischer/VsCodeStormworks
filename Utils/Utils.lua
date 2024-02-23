@@ -135,3 +135,11 @@ end
 function distanceBetweenPoints(x1,y1,x2,y2)
     return math.sqrt((x1 - x2)^2 + (y1 - y2)^2)
 end
+
+
+---check if a number is NAN
+---@param number number the number to check for NAN
+---@return boolean isNAN wether or not the number is NAN or a number
+function isNan(number)
+    return number ~= number
+end
