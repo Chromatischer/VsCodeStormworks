@@ -102,7 +102,6 @@ function onTick()
     if transponderPulse then
         -- always doing this calculation to save chars
         rangeToTransponder = math.clamp(timeSinceLastPulse * 50 - 250,250,110000) --clamped distance in meters between min 250 and max 110km
-        --print(rangeToTransponder)
         timeSinceLastPulse = 0
         if #transponderPulsePositions > 1 then
             --distance from current to last greater then 100 meters
@@ -114,7 +113,6 @@ function onTick()
 
                 intersectionCurrentLatest = circleIntersection(currentPosition.x,currentPosition.y,currentPosition.range,latestPosition.x,latestPosition.y,latestPosition.range)
                 intersectionLatestLast = circleIntersection(latestPosition.x,latestPosition.y,latestPosition.range,lastPosition.x,lastPosition.y,lastPosition.range)
-                bestCircleIntersection = nil
 
                 --all the distances of the intersection points of the four two circle intersection results
                 dist1 = math.abs(distanceBetweenPoints(intersectionCurrentLatest.x1,intersectionCurrentLatest.y1,intersectionLatestLast.x1,intersectionLatestLast.y1))
@@ -123,8 +121,6 @@ function onTick()
                 dist4 = math.abs(distanceBetweenPoints(intersectionCurrentLatest.x2,intersectionCurrentLatest.y2,intersectionLatestLast.x2,intersectionLatestLast.y2))
 
                 smallest = math.min(dist1,dist2,dist3,dist4)
-                rx = 0
-                ry = 0
                 if smallest == dist1 or smallest == dist2 then
                     rx = intersectionCurrentLatest.x1
                     ry = intersectionCurrentLatest.y1
@@ -140,31 +136,20 @@ function onTick()
     end
     timeSinceLastPulse = timeSinceLastPulse + 1
 
-    --#region minimum and maximum Error no more
-    -- if approximations[#approximations] then
-    --     minError = 0
-    --     maxError = 10000
-    --     for i = 2, #approximations, 1 do
-    --         diviation = math.abs(math.sqrt((approximations[i].x-approximations[i-1].x)^2 + (approximations[i].y-approximations[i-1].y)^2)) --pythagoras for the distance between the two last approximations
-    --         maxError = maxError < diviation and diviation or maxError --the maximum diviation from one to the next approximation
-    --         minError = minError > diviation and diviation or minError --the minimum error from one to the next approximation
-    --     end
-    --     approximations[#approximations].minError = minError
-    --     approximations[#approximations].maxError = maxError
-    -- end
-    --#endregion
-
     --#region averaging the approximations
     averagedApproximation = {x = 0, y = 0, number = 0}
-    for index, approximation in ipairs(approximations) do
-        if not isNan(approximation.x) and not isNan(approximation.y) then --check for NAN type and maybe prevent blue screen
-            averagedApproximation.x = averagedApproximation.x + approximation.x
-            averagedApproximation.y = averagedApproximation.y + approximation.y
-            averagedApproximation.number = averagedApproximation.number + 1
+    for i=0,19,1 do --only ever using the last 20 approximations in hope of better results
+        approximation = approximations[#approximations-i]
+        if approximation then
+            if not isNan(approximation.x) and not isNan(approximation.y) then --check for NAN type and maybe prevent blue screen
+                averagedApproximation.x = averagedApproximation.x + approximation.x
+                averagedApproximation.y = averagedApproximation.y + approximation.y
+                averagedApproximation.number = averagedApproximation.number + 1
+            end
         end
     end
-    averagedApproximation.x = averagedApproximation.x / #approximations
-    averagedApproximation.y = averagedApproximation.y / #approximations
+    averagedApproximation.x = averagedApproximation.x / averagedApproximation.number
+    averagedApproximation.y = averagedApproximation.y / averagedApproximation.number
     --#endregion
 
     --#region calculating Mean Error (ME)
@@ -193,7 +178,6 @@ function onTick()
             break
         else
             if i == 1 then
-                currentApproxPosition = {x = 0, y = 0}
                 transponderScore = -999
             end
             transponderScore = transponderScore - 10
@@ -237,7 +221,7 @@ function onDraw()
     --#endregion
 
     --#region draw line indicator to approximate transponder location
-    if (currentApproxPosition and averagedApproximation) and showTransponderLocation and #transponderPulsePositions > 0 then
+    if currentApproxPosition and showTransponderLocation and #transponderPulsePositions > 0 then
         if averagedApproximation.number > useAveragedApproximationNumber then --if there is an averaged approximation then use it ofc
             approxOnMapX,approxOnMapY = map.mapToScreen(mapCenterX,mapCenterY,zooms[zoom],Swidth,Sheight,averagedApproximation.x,averagedApproximation.y)
         else
