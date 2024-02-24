@@ -211,3 +211,19 @@ end
 maybe changing the values around a little bit tomorrow but that is pretty much it!
 
 
+<h2>Multifunction Display</h2>
+The Idea of this project is to have a 3x2 monitor that displays multiple parts of important information at once.
+
+- [ ] Speed
+- [ ] Direction
+- [ ] Fuel Percentage
+- [ ] Trip distance
+- [ ] Fuel usage and milage
+- [ ] Optional Track display
+
+
+<h2> Utils </h2>
+Utils are split up into many smaller files to not clutter up small projects with unnecessary functions.
+
+
+
