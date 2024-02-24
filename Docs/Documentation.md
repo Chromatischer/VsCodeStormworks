@@ -221,6 +221,49 @@ The Idea of this project is to have a 3x2 monitor that displays multiple parts o
 - [ ] Fuel usage and milage
 - [ ] Optional Track display
 
+```lua
+screen.setColor(240,115,10)
+for index, textField in ipairs(textsToDisplay) do
+    screen.drawText(textField.x,textField.y,textField.string)
+    textField.format = textField.format and textField.format or 1
+    if textField.format == 1 then
+        format = "%04d"
+    elseif textField.format == 2 then
+        format = "%03d"
+    elseif textField.format == 3 then
+        format = "%0.2f"
+    else
+        format = "%03d"
+    end
+    appendix = ""
+    if textField.format == 2 then
+        appendix = "%"
+    elseif textField.format == 4 then
+        appendix = "M"
+    end
+    screen.drawText(textField.x,textField.y + 7,string.format(format,math.floor(textField.variable)) .. appendix)
+end
+```
+this is a library that should improve text rendering dramatically and make changes easier. It takes buttons in a format like this: 
+```lua
+{x = 2, y = 2, string = "Fuel", variable = anotherVariable, format = 2}
+```
+where there is a ``x`` and ``y`` position specified at which drawing will begin. Then there is a ``string`` that shows, what you are looking at, a ``variable`` that holds the information and a ``format`` which formats this variable according to a format tag where
+
+| Format | Output |
+| ------ | ------ |
+|    1   |  0000  |
+|    2   |  000%  |
+|    3   |  0.00  |
+|    4   |  000M  |
+
+This should make development easier for the future.
+
+Moving the table to the ``onTick`` function because the variables have to be updated
+```lua
+textsToDisplay = {{x = 2, y = 2, string = "FUEL", variable = fuelPercentage, format = 2}}
+```
+
 
 <h2> Utils </h2>
 Utils are split up into many smaller files to not clutter up small projects with unnecessary functions.

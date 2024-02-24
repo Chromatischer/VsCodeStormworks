@@ -54,3 +54,10 @@ end
 function isNan(number)
     return number ~= number
 end
+
+---check if a number is inf or -inf
+---@param number number the number to check
+---@return boolean isInfinite true if the number is inf or -inf
+function isInf(number)
+    return number == math.huge or number == -math.huge
+end
