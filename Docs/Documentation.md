@@ -1,8 +1,8 @@
-<h1>Documentation Chroma-Systems Lua Projects</h1>
+### Documentation Chroma-Systems Lua Projects
 
 
 
-<h2>Interactive Map 5x3</h2>
+## Interactive Map 5x3
 
 
 This is map made specifically for 5x3 monitors. With the current ``Utils.Utils`` it is too large to be able to be pasted into sw directly so you have to strip it down to the necessary functions. It has support for dragging the map. Setting and outputting coordinates. And a radar that also displays target elevation.
@@ -23,7 +23,7 @@ which I got from this: [YouTube-Video](https://www.youtube.com/watch?v=1xHabDRpL
 
 
 
-<h2>Transponder Locator</h2>
+## Transponder Locator
 
 
 This project should be available for all monitor sizes 2x2 and larger. It has a map display and shows the approximated location of the nearest transponder.
@@ -211,7 +211,7 @@ end
 maybe changing the values around a little bit tomorrow but that is pretty much it!
 
 
-<h2>Multifunction Display</h2>
+## Multifunction Display
 The Idea of this project is to have a 3x2 monitor that displays multiple parts of important information at once.
 
 - [x] Speed
@@ -219,7 +219,7 @@ The Idea of this project is to have a 3x2 monitor that displays multiple parts o
 - [x] Fuel Percentage
 - [x] Trip distance
 - [x] Fuel usage and milage
-- [ ] Optional Track display
+- [X] Optional Track display
 
 ```lua
 screen.setColor(240,115,10)
@@ -264,8 +264,112 @@ Moving the table to the ``onTick`` function because the variables have to be upd
 textsToDisplay = {{x = 2, y = 2, string = "FUEL", variable = fuelPercentage, format = 2}}
 ```
 
+This Idea was scrapped because of the nature of the strings I wanted to display it made little sense to use this method. Instead it looks like this now:
+```lua
+screen.setColor(240, 115, 10)
+screen.drawText(2, 2, "FUEL:" .. string.format("%03d", math.floor(fuelPercentage)) .. "%")
+screen.drawText(2, 9, "RNG:" .. string.format("%03d", math.clamp(math.floor(displayRange / 1000), 0, 999)) .. "KM")
+uptimeAsHandM = fractionOfHoursToHoursAndMinutes(displayEndurance / 3600)
+screen.drawText(2, 16, "TME:" .. string.format("%02d",uptimeAsHandM.h) .. ":" .. string.format("%02d",uptimeAsHandM.m))
+screen.drawText(2, 23, "TRK:" .. string.format("%03d", math.clamp(math.floor(trackKilometers), 0, 999)) .. "KM")
+```
+Where the format is mostly the same but its all done in a similar but not the same way. Wasting that much space for formatting code that in the end wont ever be used that much seemed useless. This now shows the current fuel percentage, the range (kilometers left on tank) the endurance (time left at current usage) and the track Kilometers which need some fixing cause they start at 26 or so.
 
-<h2> Utils </h2>
+The Speed dial is looking like this:
+```lua
+knots = speed * 1.94384
+speedFactor = math.clamp(knots / maxSpeed, 0.15, 1)
+startRads = math.pi * (1/2) - math.pi * speedFactor
+lengthRads = math.pi * 2 * speedFactor
+drawCircle(72,23,21,16,startRads,lengthRads)
+speedText = "SPEED"
+screen.setColor(240,115,10)
+screen.drawLine(60,24,83,24)
+screen.drawText(72 - stringPixelLength(speedText)/2, 18, speedText)
+formatedSpeed = string.format("%03d",math.floor(knots)) .. "KN"
+screen.drawText(72 - stringPixelLength(formatedSpeed)/2, 26, formatedSpeed)
+```
+It's a circle that closes from the top to the bottom with the speed in the middle as digits. First the speed that is in m/s is transformed into knots for easier interpretation by the user. Switching around some values and numbers would make this show KpH or Mph if needed.
+
+Now for the funny track display part. This starts with finding the minimum and maximum ``x`` and ``y`` value from the ```gpsPositions`` array
+```lua
+minX = math.huge
+minY = math.huge
+maxX = -math.huge
+maxY = -math.huge
+for index, trackPoint in ipairs(gpsPositions) do
+    minX = math.min(minX, trackPoint.x) --this seams like the best option for that
+    minY = math.min(minY, trackPoint.y)
+    maxX = math.max(maxX, trackPoint.x)
+    maxY = math.max(maxY, trackPoint.y)
+end
+```
+First the variables are set to ``inf`` or ``-inf`` in case of being the maximum. Then we iterate over the entire array and use the ``math.min`` and ``math.max`` functions to get the maximum and minimum values.
+```lua
+for i = #gpsPositions - 1, 1, -1 do
+    currentPosition = gpsPositions[i]
+    lastPosition = gpsPositions[i+1]
+
+    currentGpsOnScreenPositionX = onScreenMinX + (percent(currentPosition.x, minX, maxX) * onScreenXWidth) -- then using the previously calculated value to determine the onscreen position
+    currentGpsOnScreenPositionY = onScreenMinY + (percent(currentPosition.y, minY, maxY) * onScreenYHeight)
+
+    lastGpsOnScreenPositionX = onScreenMinX + (percent(lastPosition.x, minX, maxX) * onScreenXWidth) -- then using the previously calculated value to determine the onscreen position
+    lastGpsOnScreenPositionY = onScreenMinY + (percent(lastPosition.y, minY, maxY) * onScreenYHeight)
+    screen.drawLine(lastGpsOnScreenPositionX, lastGpsOnScreenPositionY, currentGpsOnScreenPositionX, currentGpsOnScreenPositionY)
+end
+```
+Then we iterate over the ``gpsPositions`` array from the back to the front because we want to go from last to first. Although it could be done from front to back too I think. The current on screen position is being calculated by first calculating the percentage that the point is from the minimum to the maximum. This function:
+```lua
+function percent(value, min, max)
+    return (value - min) / (max - min) --changed that
+end
+```
+Found in the utils returns a value between 0 and 1. This is then multiplied by the width or height of the window to transform it into screen space. Then all of that is being added to the starting position of the window and a line is drawn.
+
+For calculating the range and endurance this code is being used and updated every 0.5 seconds at the moment:
+```lua
+distanceTraveled = math.abs(distanceBetweenPoints(gpsX, gpsY, lastGpsX, lastGpsY))
+speed = distanceTraveled / updateSeconds --is speed in meters/second
+trackKilometers = trackKilometers + (distanceTraveled / 1000) --because the total is being checked
+
+endurance = (fuelLevel / (deltaFuel / updateSeconds)) -- l / l/s should give seconds
+range = speed * endurance -- (m/s * s) should give l
+```
+The math behind it is: $\dfrac{l}{\dfrac{l}{s}}=s$ and for the range you need meters which you can get using the speed and endurance: $\dfrac{m}{s} * s = m$. Speed is just $\dfrac{s}{t}$ which we have in form of the distance traveled and the ``updateSeconds``.
+```lua
+table.insert(deltaFuelTable, 1, lastFuel - fuelLevel) --adding new values in the beginning of the array
+if #deltaFuelTable > maxDFTSize then
+    table.remove(deltaFuelTable) --removing the last and oldest value of the array when it gets to large to prevent infinite growth 
+end
+
+deltaFuel = 0
+deltaFuels = 0
+for key, deltaFuelFromTable in pairs(deltaFuelTable) do
+    deltaFuels = deltaFuels + 1
+    deltaFuel = deltaFuel + deltaFuelFromTable
+end
+deltaFuel = deltaFuel / deltaFuels
+```
+The delta fuel so the fuel being used up in the time ``updateSeconds`` is being calculated using this code. Where the current delta fuel (``lastFuel - fuelLevel``) is being inserted at the start of the array ``deltaFuelTable`` so at position 1. Then to get an accurate averaged result the size of the array is limited to ``maxDFTSize``. When the array gets larger then that, the last value is being deleted. Then I just average over the array to get the resulting ``deltaFuel``.
+
+I am using a similar approach for the ``gpsPositions`` table which is used for the Track display.
+```lua
+if #gpsPositions > 1 then
+    lastGpsPos = gpsPositions[1]
+    if math.abs(distanceBetweenPoints(lastGpsPos.x, lastGpsPos.y, gpsX, gpsY)) > 10 then
+        table.insert(gpsPositions, 1, {x = gpsX, y = gpsY})
+    end
+    if #gpsPositions > gpsDataPoints then
+        table.remove(gpsPositions)
+    end
+else
+    table.insert(gpsPositions, 1, {x = gpsX, y = gpsY})
+end
+```
+Where to stop the array from deleting old tracking data it's first checked if the vehicle has moved more then 10 meters. Then at array position one the new data is inserted and in case of a too long array the last data point is deleted. The first condition is necessary because we need the ``lastGpsPos`` to determine the distance.
+
+
+## Utils 
 Utils are split up into many smaller files to not clutter up small projects with unnecessary functions.
 
 

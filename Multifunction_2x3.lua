@@ -164,7 +164,6 @@ function onDraw()
     --#endregion
 
     --#region track drawing
-    --TODO: continue working on this track map!
     minX = math.huge
     minY = math.huge
     maxX = -math.huge
@@ -176,20 +175,20 @@ function onDraw()
         maxY = math.max(maxY, trackPoint.y)
     end
     onScreenMinX = 2
-    onScreenMaxX = 46
+    onScreenXWidth = 44
     onScreenMinY = 31
-    onScreenMaxY = 62
+    onScreenYHeight = 31
 
     screen.setColor(240, 115, 10)
     for i = #gpsPositions - 1, 1, -1 do
         currentPosition = gpsPositions[i]
         lastPosition = gpsPositions[i+1]
 
-        currentGpsOnScreenPositionX = onScreenMinX + (percent(currentPosition.x, minX, maxX) * 44) -- then using the previously calculated value to determine the onscreen position
-        currentGpsOnScreenPositionY = onScreenMinY + (percent(currentPosition.y, minY, maxY) * 31)
+        currentGpsOnScreenPositionX = onScreenMinX + (percent(currentPosition.x, minX, maxX) * onScreenXWidth) -- then using the previously calculated value to determine the onscreen position
+        currentGpsOnScreenPositionY = onScreenMinY + (percent(currentPosition.y, minY, maxY) * onScreenYHeight)
 
-        lastGpsOnScreenPositionX = onScreenMinX + (percent(lastPosition.x, minX, maxX) * 44) -- then using the previously calculated value to determine the onscreen position
-        lastGpsOnScreenPositionY = onScreenMinY + (percent(lastPosition.y, minY, maxY) * 31)
+        lastGpsOnScreenPositionX = onScreenMinX + (percent(lastPosition.x, minX, maxX) * onScreenXWidth) -- then using the previously calculated value to determine the onscreen position
+        lastGpsOnScreenPositionY = onScreenMinY + (percent(lastPosition.y, minY, maxY) * onScreenYHeight)
         screen.drawLine(lastGpsOnScreenPositionX, lastGpsOnScreenPositionY, currentGpsOnScreenPositionX, currentGpsOnScreenPositionY)
     end
     --endregion
