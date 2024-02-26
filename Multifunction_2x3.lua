@@ -157,10 +157,17 @@ function onDraw()
     --#region text drawing
     screen.setColor(240, 115, 10)
     screen.drawText(2, 2, "FUEL:" .. string.format("%03d", math.floor(fuelPercentage)) .. "%")
-    screen.drawText(2, 9, "RNG:" .. string.format("%03d", math.clamp(math.floor(displayRange / 1000), 0, 999)) .. "KM")
-    uptimeAsHandM = fractionOfHoursToHoursAndMinutes(displayEndurance / 3600)
+    if not isInf(displayRange) and not isNan(displayRange) then
+        screen.drawText(2, 9, "RNG:" .. string.format("%03d", math.clamp(math.floor(displayRange / 1000), 0, 999)) .. "KM")
+    end
+    if not isInf(displayEndurance) and not isNan(displayEndurance) then
+        uptimeAsHandM = fractionOfHoursToHoursAndMinutes(displayEndurance / 3600)
+    end
     screen.drawText(2, 16, "TME:" .. string.format("%02d",uptimeAsHandM.h) .. ":" .. string.format("%02d",uptimeAsHandM.m))
     screen.drawText(2, 23, "TRK:" .. string.format("%03d", math.clamp(math.floor(trackKilometers), 0, 999)) .. "KM")
+    screen.drawText(57, 47, "LITERS")
+    screen.drawText(50, 57, string.format("%05d", math.floor(fuelLevel)) .. "L " .. math.floor(deltaFuel))
+    screen.drawLine(51, 53, 92, 53)
     --#endregion
 
     --#region track drawing
