@@ -214,11 +214,11 @@ maybe changing the values around a little bit tomorrow but that is pretty much i
 <h2>Multifunction Display</h2>
 The Idea of this project is to have a 3x2 monitor that displays multiple parts of important information at once.
 
-- [ ] Speed
+- [x] Speed
 - [ ] Direction
-- [ ] Fuel Percentage
-- [ ] Trip distance
-- [ ] Fuel usage and milage
+- [x] Fuel Percentage
+- [x] Trip distance
+- [x] Fuel usage and milage
 - [ ] Optional Track display
 
 ```lua

@@ -61,3 +61,17 @@ end
 function isInf(number)
     return number == math.huge or number == -math.huge
 end
+
+---returns the value of value within the bounds min and max
+---@param value number the value to use
+---@param min number the minimum value
+---@param max number the maximum value
+---@return number number the position of value within min and max
+--- for percent(0, 0, 2) returns 0
+---
+--- for percent(1, 0, 2) returns 0.5
+---
+--- for percent(2, 0, 2) returns 1
+function percent(value, min, max)
+    return (value - min) / (max - min) --changed that
+end

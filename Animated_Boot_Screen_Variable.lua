@@ -53,6 +53,7 @@ end
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
 require("Utils.Utils")
+require("Utils.draw_additions")
 ticks = 0
 frames = 0
 time = 6
