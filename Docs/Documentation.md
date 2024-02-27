@@ -5,6 +5,7 @@ Table of contents:
   - [Interactive Map 5x3](#interactive-map-5x3)
   - [Transponder Locator](#transponder-locator)
   - [Multifunction Display](#multifunction-display)
+  - [Laser Depth Scanner](#laser-depth-scanner)
   - [Utils](#utils)
 
 
@@ -375,6 +376,36 @@ else
 end
 ```
 Where to stop the array from deleting old tracking data it's first checked if the vehicle has moved more then 10 meters. Then at array position one the new data is inserted and in case of a too long array the last data point is deleted. The first condition is necessary because we need the ``lastGpsPos`` to determine the distance.
+
+[[return to Top]](#documentation-chroma-systems-lua-projects)
+
+
+## Laser Depth Scanner
+
+Ok so this project has a similar idea to something like [this YouTube](https://www.youtube.com/watch?v=lSwwEqzLPmw) video shows but with a stationary boat or other thing. The Idea is to have a laser scan the whole width and height of the screen and the output it using colors to show the depth at each pixel of the screen. Furthermore you should have to option to
+ - [ ] Zoom
+ - [ ] Make the Image faster
+ - [ ] reset the screen
+
+So with the goals of this project I got to work on programming it, with until now little success. But what I think is working is this code:
+```lua
+currrentOnScreenLaserX = currrentOnScreenLaserX + pixelScanSize
+if currrentOnScreenLaserX > Swidth / pixelScanSize then
+    currrentOnScreenLaserX = 0
+    currrentOnScreenLaserY = currrentOnScreenLaserY + pixelScanSize
+    if currrentOnScreenLaserY > Sheight / pixelScanSize then
+        currrentOnScreenLaserY = 0
+    end
+end
+
+currentLaserX = ((maxLaserFOV * 2) * ((currrentOnScreenLaserX * pixelScanSize) / Swidth)) - 1
+currentLaserY = ((maxLaserFOV * 2) * ((currrentOnScreenLaserY * pixelScanSize) / Sheight)) - 1
+output.setNumber(1,currentLaserX)
+output.setNumber(2,currentLaserY)
+```
+So what it does from top to bottom is in the first few lines it steps the Laser from 0 to the screens width in steps of ``pixelScanSize`` pixels. Increasing this number will make the scan process faster but also reduce the output quality of the picture. The laser always goes to the end of one Line and then to the next line.
+The second part of this code transforms this code into laser positioning data that can be sent directly to the laser. First you have the ``maxLaserFOV`` which determines the zoom factor of the laser. Reducing this should give you a smaller area of the see-floor and with that a zoomed image but no reduction in time. This is then multiplied by two because I think the laser goes from -1 to 1. Thats also why in the end 1 is being subtracted from this value. To transform the pixel coordinates that should be scanned into a range of 0 to 1 first the ``currentOnScreenLaser`` position is multiplied by the ``pixelScanSize`` then this is being divided by the screens dimensions. THIS MAY BE WRONG BUT I DON'T KNOW. 
+
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
 
