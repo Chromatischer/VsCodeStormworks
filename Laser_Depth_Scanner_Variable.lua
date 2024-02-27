@@ -42,58 +42,122 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
+require("Utils.Utils")
+require("Utils.draw_additions")
 maxLaserFOV = 1
+laserFOVStepSize = 0.2
 LaserDistances = {}
 currentLaserX = 0
 currentLaserY = 0
-currrentOnScreenLaserX = 0
-currrentOnScreenLaserY = 0
+pause_ticks_button = 0
 Swidth = 64
 Sheight = 64
 pixelScanSize = 4
+maxPixelScanSize = 7
+minPixelScanSize = 0
+currrentOnScreenLaserX = 0
+currrentOnScreenLaserY = 0
+doScan = true
+buttons = {{x=2, y=2, string = "+", funct = function ()
+    pixelScanSize = pixelScanSize + 1 < maxPixelScanSize and pixelScanSize + 1 or pixelScanSize
+    resetLaserDraw()
+end}, {x=2, y=12, string = "-", funct = function ()
+    pixelScanSize = pixelScanSize - 1 > minPixelScanSize and pixelScanSize - 1 or pixelScanSize
+    resetLaserDraw()
+end}, {x=2, y=22, string = "S", funct = function ()
+    doScan = not doScan
+end}, {x=2, y=33, string = "I", funct = function ()
+    maxLaserFOV = maxLaserFOV + laserFOVStepSize <= 1 and maxLaserFOV + laserFOVStepSize or maxLaserFOV
+    resetLaserDraw()
+end}, {x=2, y=43, string = "D", funct = function ()
+    maxLaserFOV = maxLaserFOV - laserFOVStepSize > 0 and maxLaserFOV - laserFOVStepSize or maxLaserFOV
+    resetLaserDraw()
+end}}
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
+    isPressed = input.getBool(1)
+    touchX = input.getNumber(1)
+    touchY = input.getNumber(2)
     currentLaserDistance = input.getNumber(3)
+
+    for index, button in ipairs(buttons) do
+        if isPointInRectangle(button.x, button.y, button.w and button.w or 6, button.h and button.h or 7, touchX, touchY) and isPressed then
+            if pause_ticks_button > 30 then
+                button.funct()
+                pause_ticks_button = 0
+            end
+            button.pressed = true
+        else
+            button.pressed = false
+        end
+    end
+    pause_ticks_button = pause_ticks_button + 1
 
     if LaserDistances[currrentOnScreenLaserY] then
         LaserDistances[currrentOnScreenLaserY][currrentOnScreenLaserX] = currentLaserDistance
-        -- print(currentLaserDistance .. " Distance at postion: " .. currrentOnScreenLaserX .. "|" .. currrentOnScreenLaserY)
-        -- print(LaserDistances[currrentOnScreenLaserY][currrentOnScreenLaserY])
     else
         LaserDistances[currrentOnScreenLaserY] = {}
     end
 
-    currrentOnScreenLaserX = currrentOnScreenLaserX + pixelScanSize
-    if currrentOnScreenLaserX > Swidth / pixelScanSize then
-        currrentOnScreenLaserX = 0
-        currrentOnScreenLaserY = currrentOnScreenLaserY + pixelScanSize
-        if currrentOnScreenLaserY > Sheight / pixelScanSize then
-            currrentOnScreenLaserY = 0
+    if doScan then
+        currrentOnScreenLaserX = currrentOnScreenLaserX + pixelScanSize
+        if currrentOnScreenLaserX > Swidth then
+            currrentOnScreenLaserX = 0
+            currrentOnScreenLaserY = currrentOnScreenLaserY + pixelScanSize
+            if currrentOnScreenLaserY > Sheight then
+                currrentOnScreenLaserY = 0
+            end
         end
     end
 
-    currentLaserX = ((maxLaserFOV * 2) * ((currrentOnScreenLaserX * pixelScanSize) / Swidth)) - 1
-    currentLaserY = ((maxLaserFOV * 2) * ((currrentOnScreenLaserY * pixelScanSize) / Sheight)) - 1
-    output.setNumber(1,currentLaserX)
+    currentLaserY = ((maxLaserFOV * 2) * (currrentOnScreenLaserY / Sheight)) - 1
+    currentLaserX = ((maxLaserFOV * 2) * (currrentOnScreenLaserX / Swidth)) - 1
     output.setNumber(2,currentLaserY)
+    output.setNumber(1,currentLaserX)
 end
 
 function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
 
+    --#region minimum and maximum distance
+    minDistance = math.huge
+    maxDistance = -math.huge
+    for n, xarray in pairs(LaserDistances) do
+        for m, distance in pairs(xarray) do
+            minDistance = math.min(minDistance, distance)
+            maxDistance = math.max(maxDistance, distance)
+        end
+    end
+    --#endregion
+
+    --#region draw distance to screen
+    screen.setColor(0, 0, 0, 255)
+    screen.drawClear()
     for ypos, xarray in pairs(LaserDistances) do
         for xpos, distance in pairs(xarray) do
-            --print("Pos: " .. xpos .. "|" .. ypos .. " Distance: " .. distance)
-            screen.setColor(255, 0, 0)
-            onScreenDrawPosX = xpos * pixelScanSize
-            onScreenDrawPosY = ypos * pixelScanSize
-            screen.drawRectF(onScreenDrawPosX, onScreenDrawPosY, pixelScanSize, pixelScanSize)
-            if onScreenDrawPosX == Swidth or onScreenDrawPosX == 0 or onScreenDrawPosY == Sheight or onScreenDrawPosY == 0 then
-                print(string.format("%02d", onScreenDrawPosX) .. "|" .. string.format("%02d", onScreenDrawPosY) .. " Dimensions: " .. Swidth .. "|" .. Sheight .. " Distance: " .. distance)
+            colorshift = percent(distance, minDistance, maxDistance) * 1
+            screen.setColor(240, 115, 10, (230 * colorshift) + 25)
+            screen.drawRectF(xpos, ypos, pixelScanSize, pixelScanSize)
+            if xpos == currrentOnScreenLaserX and ypos == currrentOnScreenLaserY then
+                screen.setColor(255, 255, 255)
+                screen.drawRect(currrentOnScreenLaserX - 1, currrentOnScreenLaserY - 1, pixelScanSize + 1, pixelScanSize + 1)
             end
         end
     end
+    --#endregion
+
+    --#region draw buttons
+    for u, button in ipairs(buttons) do
+        drawButton(button.x,button.y,button.w,button.h,button.string,button.pressed)
+    end
+    --#endregion
+end
+
+function resetLaserDraw()
+    currrentOnScreenLaserX = 0
+    currrentOnScreenLaserY = 0
+    LaserDistances = {}
 end

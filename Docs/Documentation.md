@@ -383,9 +383,10 @@ Where to stop the array from deleting old tracking data it's first checked if th
 ## Laser Depth Scanner
 
 Ok so this project has a similar idea to something like [this YouTube](https://www.youtube.com/watch?v=lSwwEqzLPmw) video shows but with a stationary boat or other thing. The Idea is to have a laser scan the whole width and height of the screen and the output it using colors to show the depth at each pixel of the screen. Furthermore you should have to option to
- - [ ] Zoom
- - [ ] Make the Image faster
- - [ ] reset the screen
+ - [X] Zoom
+ - [X] Make the Image faster
+ - [X] reset the screen
+ - [ ] Vertical Scroll mode 
 
 So with the goals of this project I got to work on programming it, with until now little success. But what I think is working is this code:
 ```lua
@@ -405,6 +406,57 @@ output.setNumber(2,currentLaserY)
 ```
 So what it does from top to bottom is in the first few lines it steps the Laser from 0 to the screens width in steps of ``pixelScanSize`` pixels. Increasing this number will make the scan process faster but also reduce the output quality of the picture. The laser always goes to the end of one Line and then to the next line.
 The second part of this code transforms this code into laser positioning data that can be sent directly to the laser. First you have the ``maxLaserFOV`` which determines the zoom factor of the laser. Reducing this should give you a smaller area of the see-floor and with that a zoomed image but no reduction in time. This is then multiplied by two because I think the laser goes from -1 to 1. Thats also why in the end 1 is being subtracted from this value. To transform the pixel coordinates that should be scanned into a range of 0 to 1 first the ``currentOnScreenLaser`` position is multiplied by the ``pixelScanSize`` then this is being divided by the screens dimensions. THIS MAY BE WRONG BUT I DON'T KNOW. 
+
+So it turns out I was in deed wrong! The error was right above this text. Dividing the Screen width and Screen height by ``pixelScanSize`` breaks the whole darn thing!
+```lua
+if doScan then
+    currrentOnScreenLaserX = currrentOnScreenLaserX + pixelScanSize
+    if currrentOnScreenLaserX > Swidth then
+        currrentOnScreenLaserX = 0
+        currrentOnScreenLaserY = currrentOnScreenLaserY + pixelScanSize
+        if currrentOnScreenLaserY > Sheight then
+            currrentOnScreenLaserY = 0
+        end
+    end
+end
+```
+This is how it looks now. And it even looks way simpler so no need to make it way to complicated... Furthermore it makes the second part of the code simpler too!
+```lua
+currentLaserY = ((maxLaserFOV * 2) * (currrentOnScreenLaserY / Sheight)) - 1
+currentLaserX = ((maxLaserFOV * 2) * (currrentOnScreenLaserX / Swidth)) - 1
+```
+This fixes more of the bugs too Yippie!
+
+For the drawing part it now looks like this:
+```lua
+screen.setColor(0, 0, 0, 255)
+screen.drawClear()
+for ypos, xarray in pairs(LaserDistances) do
+    for xpos, distance in pairs(xarray) do
+        colorshift = percent(distance, minDistance, maxDistance) * 1
+        screen.setColor(240, 115, 10, (230 * colorshift) + 25)
+        screen.drawRectF(xpos, ypos, pixelScanSize, pixelScanSize)
+        if xpos == currrentOnScreenLaserX and ypos == currrentOnScreenLaserY then
+            screen.setColor(255, 255, 255)
+            screen.drawRect(currrentOnScreenLaserX - 1, currrentOnScreenLaserY - 1, pixelScanSize + 1, pixelScanSize + 1)
+        end
+    end
+end
+```
+The values may need to be adjusted while testing in game. It iterates through the ``LaserDistances`` and inside of that the ``xarray`` which is gives us the data. Then we take a predetermined min and max distance calculate a percentage with that and use it to calculate a shift into the color of the pixel to draw on screen. And then on top of all of that we draw the indicator in white of the current pixel that is being drawn to screen.
+
+Like in the [Multifunction-Display](#multifunction-display) which had the track indicator, we calculate a min and max value from the array of data using:
+```lua
+minDistance = math.huge
+maxDistance = -math.huge
+for n, xarray in pairs(LaserDistances) do
+    for m, distance in pairs(xarray) do
+        minDistance = math.min(minDistance, distance)
+        maxDistance = math.max(maxDistance, distance)
+    end
+end
+```
+This piece of code. (I might just add that into one of the Utils so that I have it ready as a single function!). It's way too late now and I have been working for 2h again so thats why there are no in-line comments. Good luck future me in trying to debug any of this! Hopefully you are as smart as I am!
 
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
