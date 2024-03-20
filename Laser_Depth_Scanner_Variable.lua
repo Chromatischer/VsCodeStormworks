@@ -58,6 +58,7 @@ minPixelScanSize = 0
 currrentOnScreenLaserX = 0
 currrentOnScreenLaserY = 0
 doScan = true
+VerticalScanMode = false
 buttons = {{x=2, y=2, string = "+", funct = function ()
     pixelScanSize = pixelScanSize + 1 < maxPixelScanSize and pixelScanSize + 1 or pixelScanSize
     resetLaserDraw()
@@ -72,6 +73,8 @@ end}, {x=2, y=33, string = "I", funct = function ()
 end}, {x=2, y=43, string = "D", funct = function ()
     maxLaserFOV = maxLaserFOV - laserFOVStepSize > 0 and maxLaserFOV - laserFOVStepSize or maxLaserFOV
     resetLaserDraw()
+end}, {x=2, y=54, string = "V", funct = function ()
+    VerticalScanMode = not VerticalScanMode
 end}}
 
 ticks = 0
@@ -106,7 +109,7 @@ function onTick()
         if currrentOnScreenLaserX > Swidth then
             currrentOnScreenLaserX = 0
             currrentOnScreenLaserY = currrentOnScreenLaserY + pixelScanSize
-            if currrentOnScreenLaserY > Sheight then
+            if currrentOnScreenLaserY > Sheight and not VerticalScanMode then
                 currrentOnScreenLaserY = 0
             end
         end
@@ -136,14 +139,33 @@ function onDraw()
     --#region draw distance to screen
     screen.setColor(0, 0, 0, 255)
     screen.drawClear()
-    for ypos, xarray in pairs(LaserDistances) do
-        for xpos, distance in pairs(xarray) do
-            colorshift = percent(distance, minDistance, maxDistance) * 1
-            screen.setColor(240, 115, 10, (230 * colorshift) + 25)
-            screen.drawRectF(xpos, ypos, pixelScanSize, pixelScanSize)
-            if xpos == currrentOnScreenLaserX and ypos == currrentOnScreenLaserY then
-                screen.setColor(255, 255, 255)
-                screen.drawRect(currrentOnScreenLaserX - 1, currrentOnScreenLaserY - 1, pixelScanSize + 1, pixelScanSize + 1)
+    if not VerticalScanMode then
+        for ypos, xarray in pairs(LaserDistances) do
+            for xpos, distance in pairs(xarray) do
+                colorshift = percent(distance, minDistance, maxDistance) * 1
+                screen.setColor(240, 115, 10, (230 * colorshift) + 25)
+                screen.drawRectF(xpos, ypos, pixelScanSize, pixelScanSize)
+                if xpos == currrentOnScreenLaserX and ypos == currrentOnScreenLaserY then
+                    screen.setColor(255, 255, 255)
+                    screen.drawRect(currrentOnScreenLaserX - 1, currrentOnScreenLaserY - 1, pixelScanSize + 1, pixelScanSize + 1)
+                end
+            end
+        end
+    else
+        -- doesnt work but youll figure it out!
+        for y = #LaserDistances, #LaserDistances - (Sheight / pixelScanSize), -1 do
+            xarray = LaserDistances[y]
+            if xarray then
+                for x = 1, #xarray, 1 do
+                    distance = xarray[x]
+                    colorshift = percent(distance, minDistance, maxDistance) * 1
+                    screen.setColor(240, 115, 10, (230 * colorshift) + 25)
+                    screen.drawRectF(x, y, pixelScanSize, pixelScanSize)
+                    if x == currrentOnScreenLaserX and y == currrentOnScreenLaserY then
+                        screen.setColor(255, 255, 255)
+                        screen.drawRect(currrentOnScreenLaserX - 1, currrentOnScreenLaserY - 1, pixelScanSize + 1, pixelScanSize + 1)
+                    end
+                end
             end
         end
     end

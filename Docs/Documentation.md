@@ -6,6 +6,7 @@ Table of contents:
   - [Transponder Locator](#transponder-locator)
   - [Multifunction Display](#multifunction-display)
   - [Laser Depth Scanner](#laser-depth-scanner)
+  - [Car System with 1x(2x1) 2x(1x1) Monitor](#car-system-with-1x2x1-2x1x1-monitor)
   - [Utils](#utils)
 
 
@@ -460,6 +461,30 @@ This piece of code. (I might just add that into one of the Utils so that I have 
 
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
+
+## Car System with 1x(2x1) 2x(1x1) Monitor
+
+First 1x1 Monitor should have:
+
+- [ ] RPS
+
+in a Dial form with a pointer and the number
+
+Second 1x1 Monitor should have:
+
+- [ ] Speed
+
+also in Dial form with a pointer and the number
+
+The 2x1 Monitor should have:
+
+- [ ] Gear
+- [ ] Fuel
+- [ ] Battery
+- [ ] Temperature
+
+this should be everything that you need for a Car display!
+Lets start! Idea is not to have touch so to not make it too complicated!
 
 
 ## Utils 
