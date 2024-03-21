@@ -75,3 +75,7 @@ end
 function percent(value, min, max)
     return (value - min) / (max - min) --changed that
 end
+
+function getCommaPlaces(number)
+    return number - math.floor(number)
+end

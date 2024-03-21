@@ -18,8 +18,8 @@
 do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
     simulator = simulator
-    simulator:setScreen(1, "1x1")
-    simulator:setProperty("ExampleNumberProperty", 123)
+    simulator:setScreen(1, "2x1")
+    simulator:setProperty("Max Gear", 14)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -28,9 +28,10 @@ do
 
         -- touchscreen defaults
         local screenConnection = simulator:getTouchScreen(1)
-        simulator:setInputNumber(1, simulator:getSlider(1)*16)
-        simulator:setProperty("Max RPS", 16)
-        simulator:setProperty("Min RPS", 8)
+        simulator:setInputNumber(1, simulator:getSlider(1) * 14)
+        simulator:setInputNumber(2, simulator:getSlider(2) * 500)
+        simulator:setInputNumber(3, 500)
+        simulator:setInputNumber(4, simulator:getSlider(3) * 100)
     end;
 end
 ---@endsection
@@ -40,41 +41,41 @@ end
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
+require("Utils.Utils")
 require("Utils.Circle_Draw_Utils")
 require("Utils.draw_additions")
-require("Utils.Utils")
 
 ticks = 0
-currentRPM = 0
 function onTick()
     ticks = ticks + 1
-    currentRPM = (input.getNumber(1) * 60 * 0.05) + currentRPM * 0.95
-    minRPM = property.getNumber("Min RPS") * 60
-    maxRPM = property.getNumber("Max RPS") * 60
-    rpmIndicator = math.clamp(percent(currentRPM, minRPM, maxRPM),0,1)
+    currentGear = input.getNumber(1)
+    maxGear = property.getNumber(1, "max Gear")
+    isUpshift = getCommaPlaces(currentGear) > 0.5
+    fuelLevel = input.getNumber(2)
+    fuelCapacity = input.getNumber(3)
+    fuelPercentage = fuelLevel / fuelCapacity
+
+    engineTemp = input.getNumber(4)
 end
 
 function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
-    IndicatorCenterX = Swidth/2
-    IndicatorCenterY = Sheight/2
-    IndicatorRadius = Sheight/2-1
-    start = math.pi * 2
-    indicatorRads = math.pi + math.pi * 1/2
+
     screen.setColor(255, 255, 255)
-    --drawCircle(IndicatorCenterX, IndicatorCenterY, IndicatorRadius, 16, start, indicatorRads)
-    drawSmallLinesAlongCircle(IndicatorCenterX, IndicatorCenterY, IndicatorRadius, 12, start, indicatorRads, 1)
-    screen.setColor(255,0,0)
-    drawCircle(IndicatorCenterX, IndicatorCenterY, IndicatorRadius, 2, start, indicatorRads/6)
-    drawCircle(IndicatorCenterX, IndicatorCenterY, IndicatorRadius-1, 2, start, indicatorRads/6)
-    screen.setColor(255,255,255)
-    drawSmallLinesAlongCircle(IndicatorCenterX, IndicatorCenterY, IndicatorRadius, 6, start, indicatorRads, 4)
-    screen.drawLine(Swidth-4,Sheight/2,Swidth-1,Sheight/2)
-    str = "RPM"
-    screen.drawText(Swidth/2-(stringPixelLength(str)/2),Sheight/2-6,str)
-    spdstr = currentRPM > minRPM and string.format("%03d",math.floor(currentRPM)) or "LOW"
-    screen.drawText(16,20,spdstr)
+    shiftStr = isUpshift and "U" or ""
+    gearString = string.format("%02d", math.floor(currentGear)) .. shiftStr
+    screen.drawText(Swidth / 2 - stringPixelLength(gearString) / 2, 2, gearString)
+
+    totalLength = 20
+    screen.drawText(2, Sheight - 6, "T")
+    screen.drawLine(2, 3 + (engineTemp / 100) * totalLength, 7, 3 + (engineTemp / 100) * totalLength)
+    screen.drawLine(2, 3 + totalLength / 2, 4, 3 + totalLength / 2)
     screen.setColor(255, 0, 0)
-    drawIndicatorInCircle(IndicatorCenterX, IndicatorCenterY, start, indicatorRads, IndicatorRadius, rpmIndicator, 0, 1)
+    screen.drawLine(2, Sheight - 8, 6, Sheight - 8)
+    screen.setColor(0, 100, 255)
+    screen.drawLine(2, 2, 6, 2)
+    screen.setColor(255, 255, 255)
+
+    
 end

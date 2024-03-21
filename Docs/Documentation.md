@@ -7,6 +7,8 @@ Table of contents:
   - [Multifunction Display](#multifunction-display)
   - [Laser Depth Scanner](#laser-depth-scanner)
   - [Car System with 1x(2x1) 2x(1x1) Monitor](#car-system-with-1x2x1-2x1x1-monitor)
+    - [1x1 RPS Screen](#1x1-rps-screen)
+    - [1x1 Speed Screen](#1x1-speed-screen)
   - [Utils](#utils)
 
 
@@ -466,26 +468,44 @@ This piece of code. (I might just add that into one of the Utils so that I have 
 
 First 1x1 Monitor should have:
 
-- [ ] RPS
+- [X] RPS
 
 in a Dial form with a pointer and the number
 
 Second 1x1 Monitor should have:
 
-- [ ] Speed
+- [X] Speed
 
 also in Dial form with a pointer and the number
 
 The 2x1 Monitor should have:
 
-- [ ] Gear
+- [X] Gear
 - [ ] Fuel
 - [ ] Battery
-- [ ] Temperature
+- [X] Temperature
 
 this should be everything that you need for a Car display!
 Lets start! Idea is not to have touch so to not make it too complicated!
 
+### 1x1 RPS Screen
+The 1x1 RPM / RPS Screen is finished now and I will use the same structure and base framework for the Speed Monitor!
+I have added some additional Utility functions in the ``Circle_Draw_Utils``. First is the ``drawSmallLinesAlongCircle()`` function which expands on the ``drawCircle()`` function and draws indicator lines form the circles radius to the center of the circle. The second is the ``drawIndicatorInCircle()`` function which draws an indicator with a specified length from the middle of the circle and shows the current value within the min and max value.
+These functions were taken over from my old notes on steam so I have no clue how they are working!
+
+The code for the RPM Screen is really simple:
+```lua
+currentRPM = (input.getNumber(1) * 60 * 0.05) + currentRPM * 0.95
+minRPM = property.getNumber("Min RPS") * 60
+maxRPM = property.getNumber("Max RPS") * 60
+rpmIndicator = math.clamp(percent(currentRPM, minRPM, maxRPM),0,1)
+```
+First all fluctuations are evened out using a WMA then everything is transformed into RPM using * 60.
+
+And I think that the draw Code should be self explanatory because its just a number of function calls to draw the UI.
+
+### 1x1 Speed Screen
+Its basically just a 1 to 1 copy of the 1x1 RPS Screen but with speed instead of displaying RPS
 
 ## Utils 
 Utils are split up into many smaller files to not clutter up small projects with unnecessary functions.
