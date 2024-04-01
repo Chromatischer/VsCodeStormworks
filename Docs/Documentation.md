@@ -9,6 +9,7 @@ Table of contents:
   - [Car System with 1x(2x1) 2x(1x1) Monitor](#car-system-with-1x2x1-2x1x1-monitor)
     - [1x1 RPS Screen](#1x1-rps-screen)
     - [1x1 Speed Screen](#1x1-speed-screen)
+    - [2x1 Multi information main display](#2x1-multi-information-main-display)
   - [Utils](#utils)
 
 
@@ -481,8 +482,8 @@ also in Dial form with a pointer and the number
 The 2x1 Monitor should have:
 
 - [X] Gear
-- [ ] Fuel
-- [ ] Battery
+- [X] Fuel
+- [X] Battery
 - [X] Temperature
 
 this should be everything that you need for a Car display!
@@ -506,6 +507,11 @@ And I think that the draw Code should be self explanatory because its just a num
 
 ### 1x1 Speed Screen
 Its basically just a 1 to 1 copy of the 1x1 RPS Screen but with speed instead of displaying RPS
+
+### 2x1 Multi information main display
+Now also comes with even more information then was previously planned! It has the Range and Endurance script from my multifunction 2x2 project! It is split up into 4 parts. Three of them are just the same thing again and again but with different values.
+
+The fourth one is directly taken from the Multifunction 2x2 project
 
 ## Utils 
 Utils are split up into many smaller files to not clutter up small projects with unnecessary functions.
