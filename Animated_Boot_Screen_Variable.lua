@@ -85,8 +85,8 @@ function onDraw()
                 screen.drawLine(backgroundLineTopX, backgroundLineTopY, backgroundLineBottomX, backgroundLineBottomY)
             end
             screen.setColor(240, 115, 10, 126)
-            radius = Swidth / 4
-            drawCircle(Swidth / 2, Sheight / 2, radius, 16, 0, (frames / time * 6 % 360) / 360 * math.pi * 2)
+            lineRadius = Swidth / 4
+            drawCircle(Swidth / 2, Sheight / 2, lineRadius, 16, 0, (frames / time * 6 % 360) / 360 * math.pi * 2)
         end
         TopLine = Swidth > 32 and "Booting" or "BOOT"
         if Swidth > 32 then

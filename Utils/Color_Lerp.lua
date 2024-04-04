@@ -14,9 +14,9 @@ function colorLerp(colorA, colorB, factor)
     gB = colorB.g
     bB = colorB.b
 
-    rR = percent(factor, rA, rB)
-    gR = percent(factor, gA, gB)
-    bR = percent(factor, bA, bB)
+    gR = lerp(factor, gA, gB)
+    bR = lerp(factor, bA, bB)
+    rR = lerp(factor, rA, rB)
 
     return {r = rR, g = gR, b = bR}
 end

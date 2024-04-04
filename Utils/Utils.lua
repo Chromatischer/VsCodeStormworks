@@ -76,6 +76,15 @@ function percent(value, min, max)
     return (value - min) / (max - min) --changed that
 end
 
+---smoothly interpolates between values a and b with factor
+---@param factor number range 0-1
+---@param a number first interpolation number
+---@param b number second interpolation number
+---@return number number the result of the interpolation
+function lerp(factor, a, b)
+    return a + (b - a) * factor
+end
+
 function getCommaPlaces(number)
     return number - math.floor(number)
 end
