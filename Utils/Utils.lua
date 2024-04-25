@@ -88,3 +88,6 @@ end
 function getCommaPlaces(number)
     return number - math.floor(number)
 end
+
+--- constants
+math.piHalf = math.pi / 2
