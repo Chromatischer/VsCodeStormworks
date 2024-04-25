@@ -522,4 +522,24 @@ Utils are split up into many smaller files to not clutter up small projects with
 [[return to Top]](#documentation-chroma-systems-lua-projects)
 
 
+## Artificial Horizon 2x3
 
+using:
+
+| Input | Value            |
+|-------|------------------|
+|   1   | pitch            |
+|   2   | roll             |
+|   3   | altitude         |
+|   4   | speed            |
+|   5   | heading          |
+|   6   | flight direction |
+
+Features:
+- Horizon Line
+    - Earth and Sky as different colors
+- Horizon Line as white line across
+- Standing Aircraft Indicator
+    - In white when in flight
+    - Wit color and different Arrows and directions when near hovering or standing still (3D indicator)
+- Speed and altitude indicator with change on each of the sides
