@@ -14,5 +14,5 @@ function radarToGlobalCoordinates(contactDistance,contactYaw,contactPitch,gpsX,g
     y = contactDistance * math.cos(globalAngle)
     globalPitch = math.rad((contactPitch*360) + pitch*360)
     z = contactDistance * math.tan(globalPitch)
-    return {x=x+gpsX,y=y+gpsY,z=z+gpsZ,age=100}
+    return {x=x+gpsX, y=y+gpsY, z=z+gpsZ, age=100}
 end

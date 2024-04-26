@@ -19,7 +19,7 @@ do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
     simulator = simulator
     simulator:setScreen(1, "3x3")
-    simulator:setProperty("ExampleNumberProperty", 123)
+    simulator:setProperty("Secondary Radar Horizontal", false)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -43,12 +43,22 @@ end
 
 require("Utils.Utils")
 require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Circle_To_Square_Utils")
 
 ticks = 0
 cameraInfraredActive = false
 targetPitch = 0
 cameraTargetFOV = 0
 secondaryPivotSpeed = 0
+secondaryRadarHorizontal = true
+primaryRadarContacts = {}
+secondaryRadarContact = {}
+primaryRadarMaxRange = 20000
+isRadarDisplay = true
+radarDisplayRange = 14
+radarDisplayRanges = {500, 1000, 2000, 3000, 4000, 5000, 7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000}
+
+
 function onTick()
     ticks = ticks + 1
     radarPivotCurrent = input.getNumber(1)
@@ -57,16 +67,23 @@ function onTick()
     secondaryRadarZPos = input.getNumber(4)
     secondaryRadarYPos = input.getNumber(5)
     secondaryRadarOrientation = input.getNumber(6)
-    primaryRadarRotation = input.getNumber(7)
-    primaryRadarTargetOA = input.getNumber(8)
-    primaryRadarTargetOE = input.getNumber(9)
-    primaryRadarTargetTA = input.getNumber(10)
-    primaryRadarTargetTE = input.getNumber(11)
-    secondaryRadarOutput = input.getNumber(12) -- problably unused
-    secondaryRadarTargetA = input.getNumber(13)
-    secondaryRadarTargetE = input.getNumber(14)
+    primaryRadarRotation = input.getNumber(7) * 360
+    primaryRadarTargetD = input.getNumber(8)
+    primaryRadarTargetA = input.getNumber(9)
+    primaryRadarTargetE = input.getNumber(10)
+    secondaryRadarOutput = input.getNumber(11) -- problably unused
+    secondaryRadarTargetD = input.getNumber(12)
+    secondaryRadarTargetA = input.getNumber((secondaryRadarHorizontal and 13 or 14)) -- Radar target Azimuth and elevation have to be swapped due to not being horizontal!
+    secondaryRadarTargetE = input.getNumber((secondaryRadarHorizontal and 14 or 13))
     monitorTouchX = input.getNumber(15)
     monitorTouchY = input.getNumber(16)
+    primaryRadarX = input.getNumber(17)
+    primaryRadarZ = input.getNumber(18)
+    primaryRadarY = input.getNumber(19)
+    primaryRadarCompas = input.getNumber(20)
+    primaryRadarPitch = input.getNumber(21)
+    secondaryRadarPitch = input.getNumber(22) -- has to be added to the pitch pivot!
+
     monitorIsTouched = input.getBool(1)
     primaryActive = input.getBool(2)
     primaryRadarTargetOD = input.getBool(3)
@@ -74,12 +91,55 @@ function onTick()
     secondaryActive = input.getBool(5)
     secondaryRadarTargetD = input.getBool(6)
 
+    secondaryRadarHorizontal = property.getBool("Secondary Radar Horizontal")
+
     output.setBool(1, cameraInfraredActive)
     output.setNumber(1, targetPitch)
     output.setNumber(2, cameraTargetFOV)
     output.setNumber(3, secondaryPivotSpeed)
+
+    if primaryRadarTargetOD then
+        primaryRadarContacts[primaryRadarRotation] = radarToGlobalCoordinates(primaryRadarTargetD, primaryRadarTargetA, primaryRadarTargetE, primaryRadarX, primaryRadarY, primaryRadarZ, primaryRadarCompas, primaryRadarPitch)
+        primaryRadarContacts[primaryRadarRotation].d = primaryRadarTargetD
+    else
+        primaryRadarContacts[primaryRadarRotation] = nil
+    end
 end
 
 function onDraw()
-    screen.drawCircle(16,16,5)
+    Swidth = screen.getWidth()
+    Sheight = screen.getHeight()
+
+    if isRadarDisplay then
+        screen.setColor(0, 0, 0, 255)
+        screen.drawRectF(0, 0, Swidth, Sheight)
+
+        radarDisplaySquareStartX = 10
+        radarDisplaySquareStartY = 10
+        radarDisplaySize = 50
+        screen.setColor(255, 0, 0)
+        screen.drawRect(radarDisplaySquareStartX, radarDisplaySquareStartY, radarDisplaySize, radarDisplaySize)
+
+        realRadarDisplayRange = radarDisplayRanges[radarDisplayRange]
+        i = 0
+        for iterator, contact in pairs(primaryRadarContacts) do
+            u = (contact.x - primaryRadarX) / realRadarDisplayRange --the distance to the target on the X axis divided by the display range
+            v = (contact.y - primaryRadarY) / realRadarDisplayRange --distance on the Y axis
+            x, y = ellipticalDiscToSquare(u, v) -- only the offset that has to be added
+            --assuming that this x and y also comes in 0.0-1.0 coordinate format ofc!
+            x = x * radarDisplaySize --casting it to the size of the square
+            y = y * radarDisplaySize
+            if i == 0 then
+                screen.drawText(0, 0, "u: " .. u .. " v:" .. v)
+                screen.drawText(0, 7, "x:" .. x .. " y:" .. y)
+                screen.drawText(0, 14, contact.d)
+            end
+            screen.drawRectF(radarDisplaySquareStartX + x, radarDisplaySquareStartY + y, 2, 2) --drawing it to the screen
+            i = i + 1
+            -- holy shit this actually works! I have no fucking clue how or why but it does something! Fixing may be needed later but I am going to sleep!
+        end
+    else
+
+    end
+
 end
