@@ -52,6 +52,7 @@ cameraTargetFOV = 0
 secondaryPivotSpeed = 0
 secondaryRadarHorizontal = true
 primaryRadarContacts = {}
+primaryRadarTime = {}
 secondaryRadarContact = {}
 primaryRadarMaxRange = 20000
 isRadarDisplay = true
@@ -116,7 +117,7 @@ function onDraw()
 
         radarDisplaySquareStartX = 10
         radarDisplaySquareStartY = 10
-        radarDisplaySize = 50
+        radarDisplaySize = math.min(Swidth, Sheight) - 20
         screen.setColor(255, 0, 0)
         screen.drawRect(radarDisplaySquareStartX, radarDisplaySquareStartY, radarDisplaySize, radarDisplaySize)
 
@@ -130,13 +131,37 @@ function onDraw()
             x = x * radarDisplaySize --casting it to the size of the square
             y = y * radarDisplaySize
             if i == 0 then
-                screen.drawText(0, 0, "u: " .. u .. " v:" .. v)
-                screen.drawText(0, 7, "x:" .. x .. " y:" .. y)
+                screen.drawText(0, 0, "u: " .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v))
+                screen.drawText(0, 7, "x:" .. math.floor(x) .. " y:" .. math.floor(y))
                 screen.drawText(0, 14, contact.d)
             end
             screen.drawRectF(radarDisplaySquareStartX + x, radarDisplaySquareStartY + y, 2, 2) --drawing it to the screen
             i = i + 1
             -- holy shit this actually works! I have no fucking clue how or why but it does something! Fixing may be needed later but I am going to sleep!
+        end
+        debugPoints = {{u = 0, v = 0}, {u = 0, v = 0.5}, {u = 0.5, v = 0}, {u = 0, v = -0.5}, {u = -0.5, v = 0}, {u = 0.5, v = 0.5}, {u = -0.5, v = -0.5}, {u = 0.5, v = -0.5}, {u = -0.5, v = 0.5}}
+        for index, point in ipairs(debugPoints) do
+            if point.u == 0 and point.v == 0 then
+                screen.setColor(0, 255, 0)
+            else
+                screen.setColor(0, 0, 255)
+            end
+            x, y = fgSquircularMapping(point.u, point.v)
+            --x2, y2 = simpleStretching(point.u, point.v)
+            --print(tostring(x == x2) .. " " .. tostring(y == y2))
+
+            radarCenterX = radarDisplaySquareStartX + radarDisplaySize / 2
+            radarCenterY = radarDisplaySquareStartY + radarDisplaySize / 2
+
+
+            x = radarCenterX + x * radarDisplaySize / 2
+            y = radarCenterY + y * radarDisplaySize / 2
+            if isNan(x) or isNan(y) or isInf(x) or isInf(y) then
+                print("u: " .. string.format("%.2f", point.u) .. " v:" .. string.format("%.2f", point.v) .. " x:" .. math.floor(x) .. " y:" .. math.floor(y) .. " cx:" .. radarCenterX .. " cy:" .. radarCenterY)
+            end
+            screen.drawRectF(x, y, 1, 1) --drawing it to the screen
+            screen.setColor(255, 255, 0)
+            screen.drawRectF(radarCenterX, radarCenterY, 1, 1)
         end
     else
 
