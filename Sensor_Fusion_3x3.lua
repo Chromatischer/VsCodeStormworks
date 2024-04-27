@@ -31,6 +31,7 @@ do
         simulator:setInputBool(1, screenConnection.isTouched)
         simulator:setInputNumber(15, screenConnection.touchX)
         simulator:setInputNumber(16, screenConnection.touchY)
+        simulator:setInputNumber(7, ((ticks % 200) / 200) * 0.5 - 0.25)
     end;
 end
 ---@endsection
@@ -79,8 +80,8 @@ function onTick()
     monitorTouchX = input.getNumber(15)
     monitorTouchY = input.getNumber(16)
     primaryRadarX = input.getNumber(17)
-    primaryRadarZ = input.getNumber(18)
     primaryRadarY = input.getNumber(19)
+    primaryRadarZ = input.getNumber(18)
     primaryRadarCompas = input.getNumber(20)
     primaryRadarPitch = input.getNumber(21)
     secondaryRadarPitch = input.getNumber(22) -- has to be added to the pitch pivot!
@@ -100,8 +101,10 @@ function onTick()
     output.setNumber(3, secondaryPivotSpeed)
 
     if primaryRadarTargetOD then
-        primaryRadarContacts[primaryRadarRotation] = radarToGlobalCoordinates(primaryRadarTargetD, primaryRadarTargetA, primaryRadarTargetE, primaryRadarX, primaryRadarY, primaryRadarZ, primaryRadarCompas, primaryRadarPitch)
-        primaryRadarContacts[primaryRadarRotation].d = primaryRadarTargetD
+        if not (primaryRadarTargetD <= 0) then
+            primaryRadarContacts[primaryRadarRotation] = radarToGlobalCoordinates(primaryRadarTargetD, primaryRadarTargetA, primaryRadarTargetE, primaryRadarX, primaryRadarY, primaryRadarZ, primaryRadarCompas, primaryRadarPitch)
+            primaryRadarContacts[primaryRadarRotation].d = primaryRadarTargetD
+        end
     else
         primaryRadarContacts[primaryRadarRotation] = nil
     end
@@ -118,51 +121,81 @@ function onDraw()
         radarDisplaySquareStartX = 10
         radarDisplaySquareStartY = 10
         radarDisplaySize = math.min(Swidth, Sheight) - 20
+        radarCenterX = radarDisplaySquareStartX + radarDisplaySize / 2
+        radarCenterY = radarDisplaySquareStartY + radarDisplaySize / 2
         screen.setColor(255, 0, 0)
-        screen.drawRect(radarDisplaySquareStartX, radarDisplaySquareStartY, radarDisplaySize, radarDisplaySize)
+        screen.drawRect(radarDisplaySquareStartX, radarDisplaySquareStartY, radarDisplaySize, radarDisplaySize / 2)
 
         realRadarDisplayRange = radarDisplayRanges[radarDisplayRange]
         i = 0
+        m = 0
         for iterator, contact in pairs(primaryRadarContacts) do
-            u = (contact.x - primaryRadarX) / realRadarDisplayRange --the distance to the target on the X axis divided by the display range
-            v = (contact.y - primaryRadarY) / realRadarDisplayRange --distance on the Y axis
-            x, y = ellipticalDiscToSquare(u, v) -- only the offset that has to be added
-            --assuming that this x and y also comes in 0.0-1.0 coordinate format ofc!
-            x = x * radarDisplaySize --casting it to the size of the square
-            y = y * radarDisplaySize
-            if i == 0 then
-                screen.drawText(0, 0, "u: " .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v))
-                screen.drawText(0, 7, "x:" .. math.floor(x) .. " y:" .. math.floor(y))
-                screen.drawText(0, 14, contact.d)
+            u0 = (contact.x - primaryRadarX) / realRadarDisplayRange --the distance to the target on the X axis divided by the display range
+            v0 = (primaryRadarY - contact.y) / realRadarDisplayRange --distance on the Y axis
+            u, v = uvCoordinatesOntoUnitCircle(u0, v0) --maps the points onto the unit circle very cool shit!
+            if u0 >= -1 and u0 <= 1 and v0 >= -1 and v0 <= 1 then --emergency check
+                x, y = ellipticalGridMapping(u, v) -- only the offset that has to be added
+                --assuming that this x and y also comes in 0.0-1.0 coordinate format ofc!
+
+                x = radarCenterX + x * radarDisplaySize / 2
+                y = radarCenterY + y * radarDisplaySize / 2
+
+                --if i == 0 then
+                --    screen.drawText(0, radarCenterY + 2, "u: " .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v))
+                --    screen.drawText(0, radarCenterY + 9, "x:" .. math.floor(x) .. " y:" .. math.floor(y))
+                --    screen.drawText(0, radarCenterY + 16, contact.d)
+                --    --screen.drawText(0, radarCenterY + 23, tostring(math.floor(realRadarDisplayRange)))
+                --    i = i + 1
+                --end
+
+                if u >= -1 and u <= 1 and v <= 0 and v >= -1 then
+                    screen.drawRectF(x, y, 2, 2) --drawing it to the screen
+                end
+                primaryRadarContacts[iterator].displayX = x
+                primaryRadarContacts[iterator].displayY = y
             end
-            screen.drawRectF(radarDisplaySquareStartX + x, radarDisplaySquareStartY + y, 2, 2) --drawing it to the screen
-            i = i + 1
-            -- holy shit this actually works! I have no fucking clue how or why but it does something! Fixing may be needed later but I am going to sleep!
+            --if m <= 5 then
+            --    if v0 >= -1 and v0 <= 0 then
+            --        screen.drawText(0, radarCenterY + 23 + m * 14, "b:" .. string.format("%.2f", u0) .. " j:" .. string.format("%.2f", v0))
+            --        screen.drawText(0, radarCenterY + 30 + m * 14, "u:" .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v))
+            --        m = m + 1
+            --    end
+            --end
         end
-        debugPoints = {{u = 0, v = 0}, {u = 0, v = 0.5}, {u = 0.5, v = 0}, {u = 0, v = -0.5}, {u = -0.5, v = 0}, {u = 0.5, v = 0.5}, {u = -0.5, v = -0.5}, {u = 0.5, v = -0.5}, {u = -0.5, v = 0.5}}
-        for index, point in ipairs(debugPoints) do
-            if point.u == 0 and point.v == 0 then
-                screen.setColor(0, 255, 0)
-            else
-                screen.setColor(0, 0, 255)
-            end
-            x, y = fgSquircularMapping(point.u, point.v)
-            --x2, y2 = simpleStretching(point.u, point.v)
-            --print(tostring(x == x2) .. " " .. tostring(y == y2))
 
-            radarCenterX = radarDisplaySquareStartX + radarDisplaySize / 2
-            radarCenterY = radarDisplaySquareStartY + radarDisplaySize / 2
+        --#region radar rotation line
+        radarDisplayRotation = primaryRadarRotation / 90
+        radarDisplayRotation, _ = uvCoordinatesOntoUnitCircle(radarDisplayRotation, 0)
+        x, _ = ellipticalGridMapping(radarDisplayRotation, 0)
 
+        radarDisplayRotationX = radarDisplaySquareStartX + radarDisplaySize / 2 + x * radarDisplaySize / 2
+        screen.drawLine(radarDisplayRotationX, radarDisplaySquareStartY, radarDisplayRotationX, radarDisplaySquareStartY + radarDisplaySize / 2)
+        --#endregion
 
-            x = radarCenterX + x * radarDisplaySize / 2
-            y = radarCenterY + y * radarDisplaySize / 2
-            if isNan(x) or isNan(y) or isInf(x) or isInf(y) then
-                print("u: " .. string.format("%.2f", point.u) .. " v:" .. string.format("%.2f", point.v) .. " x:" .. math.floor(x) .. " y:" .. math.floor(y) .. " cx:" .. radarCenterX .. " cy:" .. radarCenterY)
-            end
-            screen.drawRectF(x, y, 1, 1) --drawing it to the screen
-            screen.setColor(255, 255, 0)
-            screen.drawRectF(radarCenterX, radarCenterY, 1, 1)
-        end
+        --debugPoints = {{u = 0, v = 0}, {u = 0, v = 2}, {u = 2, v = 0}, {u = 0, v = -2}, {u = -2, v = 0}, {u = 2, v = 2}, {u = -2, v = -2}, {u = 2, v = -2}, {u = -1, v = 1}}
+        --for index, point in ipairs(debugPoints) do
+        --    u, v = uvCoordinatesOntoUnitCircle(point.u, point.v)
+        --    if u == 0 and v == 0 then
+        --        screen.setColor(0, 255, 0)
+        --    else
+        --        screen.setColor(0, 0, 255)
+        --    end
+        --    x, y = ellipticalGridMapping(u, v)
+        --    --x2, y2 = simpleStretching(point.u, point.v)
+        --    --print(tostring(x == x2) .. " " .. tostring(y == y2))
+        --    radarCenterX = radarDisplaySquareStartX + radarDisplaySize / 2
+        --    radarCenterY = radarDisplaySquareStartY + radarDisplaySize / 2
+        --    x = radarCenterX + x * radarDisplaySize / 2
+        --    y = radarCenterY + y * radarDisplaySize / 2
+        --    if isNan(x) or isNan(y) or isInf(x) or isInf(y) then
+        --        print("u: " .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v) .. " x:" .. math.floor(x) .. " y:" .. math.floor(y) .. " cx:" .. radarCenterX .. " cy:" .. radarCenterY)
+        --    end
+        --    if v <= 0 then
+        --        screen.drawRectF(x, y, 1, 1) --drawing it to the screen
+        --        screen.setColor(255, 255, 0)
+        --        screen.drawRectF(radarCenterX, radarCenterY, 1, 1)
+        --    end
+        --end
     else
 
     end

@@ -50,6 +50,9 @@ function ellipticalGridMapping(u, v)
 
     x = u == 0 and u or x
     y = v == 0 and v or y
+    --if u2 + v2 > 1 then
+    --    print("EROR")
+    --end
     return x, y
 end
 
@@ -83,4 +86,31 @@ function twoSquircularMapping(u, v)
     x = v == 0 and u or signuv / v * math.sqrt(2) * common
     y = u == 0 and v or signuv / u * math.sqrt(2) * common
     return x, y
+end
+
+---maps UV coordinates onto the unit circle even though they are outside
+---@param u number the original x value
+---@param v number the original y value
+---@return number u the new x value
+---@return number v the new y value
+---based on the pythagorean therum and the fact that dividing by the distance will always make it return into the unit circle with radius 1
+---see: https://www.desmos.com/calculator/ob8rg6n35e?lang=de for the base idea visualized
+function uvCoordinatesOntoUnitCircle(u, v)
+    u2 = u ^ 2
+    v2 = v ^ 2
+    d = math.sqrt(u2 + v2)
+    if d >= 1 then
+        if u == 0 then
+            return 0, math.clamp(v, -1, 1)
+        else
+            if v == 0 then
+                return math.clamp(u, -1, 1), 0
+            else
+                return (u / d), (v / d)
+            end
+        end
+    else
+        --print("u:" .. u .. " v:" .. v .. " d:" .. d)
+        return u, v
+    end
 end
