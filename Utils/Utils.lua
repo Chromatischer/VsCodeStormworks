@@ -6,9 +6,11 @@
 ---@param x number the X position of the point to check for
 ---@param y number the Y position of the point to check for
 ---@return boolean boolean true if the point is inside the rectangle
+---@section isPointInRectangle
 function isPointInRectangle(rectX,rectY,rectW,rectH,x,y)
     return x > rectX and y > rectY and x < rectX+rectW and y < rectY+rectH
 end
+---@endsection
 
 ---clamps x within min and max
 ---@param x number the value to clamp
@@ -16,11 +18,14 @@ end
 ---@param max number the maximum value for x
 ---@return number number the clamped value of x within min and max
 ---@diagnostic disable-next-line: duplicate-set-field
+---@section math.clamp addon
 function math.clamp(x,min,max)
     return math.min(math.max(x, min), max)
 end
+---@endsection
 
 ---sets the default map colors for your lua products
+---@section setMapColors
 function setMapColors()
     screen.setMapColorOcean(0,0,0)
     screen.setMapColorShallows(55,55,55)
@@ -29,13 +34,16 @@ function setMapColors()
     screen.setMapColorSand(80,80,80)
     screen.setMapColorSnow(80,80,80)
 end
+---@endsection
 
 ---returns the length of a string drawn on screen in pixels
 ---@param string string the string to get the length of
 ---@return integer length the length in pixels of the string
+---@section getStringPixelLength
 function stringPixelLength(string)
     return #string * 5
 end
+---@endsection
 
 ---returns the distance between two known points
 ---@param x1 number the first points X-Coordinate
@@ -43,24 +51,30 @@ end
 ---@param x2 number the second points X-Coordinate
 ---@param y2 number the second points Y-Coordinate
 ---@return number distance the distance between point A and B
+---@section distanceBetweenPoints
 function distanceBetweenPoints(x1,y1,x2,y2)
     return math.sqrt((x1 - x2)^2 + (y1 - y2)^2)
 end
+---@endsection
 
 
 ---check if a number is NAN
 ---@param number number the number to check for NAN
 ---@return boolean isNAN wether or not the number is NAN or a number
+---@section isNan
 function isNan(number)
     return number ~= number
 end
+---@endsection
 
 ---check if a number is inf or -inf
 ---@param number number the number to check
 ---@return boolean isInfinite true if the number is inf or -inf
+---@section isInf
 function isInf(number)
     return number == math.huge or number == -math.huge
 end
+---@endsection
 
 ---returns the value of value within the bounds min and max
 ---@param value number the value to use
@@ -72,22 +86,31 @@ end
 --- for percent(1, 0, 2) returns 0.5
 ---
 --- for percent(2, 0, 2) returns 1
+---@section percent
 function percent(value, min, max)
     return (value - min) / (max - min) --changed that
 end
+---@endsection
 
 ---smoothly interpolates between values a and b with factor
 ---@param factor number range 0-1
 ---@param a number first interpolation number
 ---@param b number second interpolation number
 ---@return number number the result of the interpolation
+---@section lerp
 function lerp(factor, a, b)
     return a + (b - a) * factor
 end
+---@endsection
 
+---returns the comma places behind the integer (1.5663 -> 0.5663)
+---@param number number the float to get the comma places of
+---@return number number the non integer part of the number
+---@section getCommaPlaces
 function getCommaPlaces(number)
     return number - math.floor(number)
 end
+---@endsection
 
 --- constants
 math.piHalf = math.pi / 2

@@ -36,12 +36,6 @@ do
 end
 ---@endsection
 
-
---[====[ IN-GAME CODE ]====]
-
--- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
--- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-
 require("Utils.Utils")
 require("Utils.Coordinate.radarToGlobalCoordinates")
 require("Utils.Circle_To_Square_Utils")
@@ -172,6 +166,7 @@ function onDraw()
         screen.drawLine(radarDisplayRotationX, radarDisplaySquareStartY, radarDisplayRotationX, radarDisplaySquareStartY + radarDisplaySize / 2)
         --#endregion
 
+        --#region debug points
         --debugPoints = {{u = 0, v = 0}, {u = 0, v = 2}, {u = 2, v = 0}, {u = 0, v = -2}, {u = -2, v = 0}, {u = 2, v = 2}, {u = -2, v = -2}, {u = 2, v = -2}, {u = -1, v = 1}}
         --for index, point in ipairs(debugPoints) do
         --    u, v = uvCoordinatesOntoUnitCircle(point.u, point.v)
@@ -196,6 +191,7 @@ function onDraw()
         --        screen.drawRectF(radarCenterX, radarCenterY, 1, 1)
         --    end
         --end
+        --#endregion
     else
 
     end
