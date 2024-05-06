@@ -210,7 +210,7 @@ function onDraw()
             v0 = (primaryRadarY - contact.y) / realRadarDisplayRange --distance on the Y axis
             u, v = uvCoordinatesOntoUnitCircle(u0, v0) --maps the points onto the unit circle very cool shit!
             if u0 >= -1 and u0 <= 1 and v0 >= -1 and v0 <= 1 then --emergency check
-                x, y = ellipticalGridMapping(u, v) -- only the offset that has to be added
+                x, y = fgSquircularMapping(u, v) -- only the offset that has to be added
                 --assuming that this x and y also comes in 0.0-1.0 coordinate format ofc!
 
                 x = radarCenterX + x * radarDisplaySize / 2
@@ -253,37 +253,10 @@ function onDraw()
         --#region radar rotation line
         radarDisplayRotation = primaryRadarRotation / 90
         radarDisplayRotation, _ = uvCoordinatesOntoUnitCircle(radarDisplayRotation, 0)
-        x, _ = ellipticalGridMapping(radarDisplayRotation, 0)
+        x, _ = fgSquircularMapping(radarDisplayRotation, 0)
 
         radarDisplayRotationX = radarDisplaySquareStartX + radarDisplaySize / 2 + x * radarDisplaySize / 2
         screen.drawLine(radarDisplayRotationX, radarDisplaySquareStartY, radarDisplayRotationX, radarDisplaySquareStartY + radarDisplaySize / 2)
-        --#endregion
-
-        --#region debugPoints
-        --debugPoints = {{u = 0, v = 0}, {u = 0, v = 2}, {u = 2, v = 0}, {u = 0, v = -2}, {u = -2, v = 0}, {u = 2, v = 2}, {u = -2, v = -2}, {u = 2, v = -2}, {u = -1, v = 1}}
-        --for index, point in ipairs(debugPoints) do
-        --    u, v = uvCoordinatesOntoUnitCircle(point.u, point.v)
-        --    if u == 0 and v == 0 then
-        --        screen.setColor(0, 255, 0)
-        --    else
-        --        screen.setColor(0, 0, 255)
-        --    end
-        --    x, y = ellipticalGridMapping(u, v)
-        --    --x2, y2 = simpleStretching(point.u, point.v)
-        --    --print(tostring(x == x2) .. " " .. tostring(y == y2))
-        --    radarCenterX = radarDisplaySquareStartX + radarDisplaySize / 2
-        --    radarCenterY = radarDisplaySquareStartY + radarDisplaySize / 2
-        --    x = radarCenterX + x * radarDisplaySize / 2
-        --    y = radarCenterY + y * radarDisplaySize / 2
-        --    if isNan(x) or isNan(y) or isInf(x) or isInf(y) then
-        --        print("u: " .. string.format("%.2f", u) .. " v:" .. string.format("%.2f", v) .. " x:" .. math.floor(x) .. " y:" .. math.floor(y) .. " cx:" .. radarCenterX .. " cy:" .. radarCenterY)
-        --    end
-        --    if v <= 0 then
-        --        screen.drawRectF(x, y, 1, 1) --drawing it to the screen
-        --        screen.setColor(255, 255, 0)
-        --        screen.drawRectF(radarCenterX, radarCenterY, 1, 1)
-        --    end
-        --end
         --#endregion
 
         for index, button in ipairs(buttons) do
@@ -309,97 +282,4 @@ function onDraw()
         end
     end
 
-end
-
----maps UV coordinates onto the unit circle even though they are outside
----@param u number the original x value
----@param v number the original y value
----@return number u the new x value
----@return number v the new y value
----based on the pythagorean therum and the fact that dividing by the distance will always make it return into the unit circle with radius 1
----see: https://www.desmos.com/calculator/ob8rg6n35e?lang=de for the base idea visualized
-function uvCoordinatesOntoUnitCircle(u, v)
-    u2 = u ^ 2
-    v2 = v ^ 2
-    d = math.sqrt(u2 + v2)
-    if d >= 1 then
-        if u == 0 then
-            return 0, math.clamp(v, -1, 1)
-        else
-            if v == 0 then
-                return math.clamp(u, -1, 1), 0
-            else
-                return (u / d), (v / d)
-            end
-        end
-    else
-        --print("u:" .. u .. " v:" .. v .. " d:" .. d)
-        return u, v
-    end
-end
-
----This is an algorithm that converts coordinates from a circular space into a square space!
----@param u number the u coordinate in the circular space range: -1 - 1
----@param v number the v coordinate in the circular space range: -1 - 1
----@return number x the x coordinate in the square space range: -1 - 1
----@return number y the y coordinate in the square space range -1 - 1
----source: http://arxiv.org/abs/1509.06344
-function ellipticalGridMapping(u, v)
-    u2 = u ^ 2
-    v2 = v ^ 2
-    sqrt2 = 2 * math.sqrt(2)
-
-    x = 0.5 * math.sqrt(2 + u2 - v2 + sqrt2 * u) - 0.5 * math.sqrt(2 + u2 - v2 - sqrt2 * u)
-    y = 0.5 * math.sqrt(2 - u2 + v2 + sqrt2 * v) - 0.5 * math.sqrt(2 - u2 + v2 - sqrt2 * v)
-
-    x = u == 0 and u or x
-    y = v == 0 and v or y
-    --if u2 + v2 > 1 then
-    --    print("EROR")
-    --end
-    return x, y
-end
-
----draws a simplistic but great looking button to the screen
----@param x number the screen x position for the button
----@param y number the screen y position for the button
----@param w number the width of the button to draw (6 for single char)
----@param h number the height of the button to draw (7 for single char)
----@param string string the text to draw inside of the button
----@param pressed boolean wheather or not the button is being pressed
-function drawButton(x,y,w,h,string,pressed)
-    w = w or 6
-    h = h or 7
-    screen.setColor(90,90,90)
-    screen.drawRect(x-1,y-1,w+1,h+1)
-    if pressed then
-        screen.setColor(255,100,100)
-    else
-        screen.setColor(100,100,100)
-    end
-    screen.drawRectF(x,y,w,h)
-    screen.setColor(240,115,10)
-    screen.drawText(x+1,y+1,string)
-end
-
----returns wether or not a point XY is within the specified rectangle
----@param rectX number the start of the rectangle
----@param rectY number the end of the rectangle
----@param rectW number the width of the rectangle
----@param rectH number the height of the rectangle
----@param x number the X position of the point to check for
----@param y number the Y position of the point to check for
----@return boolean boolean true if the point is inside the rectangle
-function isPointInRectangle(rectX,rectY,rectW,rectH,x,y)
-    return x > rectX and y > rectY and x < rectX+rectW and y < rectY+rectH
-end
-
----clamps x within min and max
----@param x number the value to clamp
----@param min number the minimum value for x
----@param max number the maximum value for x
----@return number number the clamped value of x within min and max
----@diagnostic disable-next-line: duplicate-set-field
-function math.clamp(x,min,max)
-    return math.min(math.max(x, min), max)
 end

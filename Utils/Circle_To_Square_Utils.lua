@@ -1,3 +1,4 @@
+---@section math.sign
 function math.sign(number)
     if number > 0 then
        return 1
@@ -7,12 +8,14 @@ function math.sign(number)
        return 0
     end
 end
+---@endsection
 
 ---This is an algorithm that converts coordinates from a circular space into a square space!
 ---@param u number the u coordinate in the circular space range: -1 - 1
 ---@param v number the v coordinate in the circular space range: -1 - 1
 ---@return number x the x coordinate in the square space range: -1 - 1
 ---@return number y the y coordinate in the square space range -1 - 1
+---@section simpleStretching
 ---source: http://arxiv.org/abs/1509.06344
 function simpleStretching(u, v)
     u2 = u ^ 2
@@ -33,6 +36,7 @@ function simpleStretching(u, v)
     y = v == 0 and v or y
     return x, y
 end
+---@endsection
 
 
 
@@ -41,6 +45,7 @@ end
 ---@param v number the v coordinate in the circular space range: -1 - 1
 ---@return number x the x coordinate in the square space range: -1 - 1
 ---@return number y the y coordinate in the square space range -1 - 1
+---@section fgSquircularMapping
 ---source: http://arxiv.org/abs/1509.06344
 function fgSquircularMapping(u, v)
     u2 = u ^ 2
@@ -52,12 +57,14 @@ function fgSquircularMapping(u, v)
     y = u == 0 and v or (signuv / u * math.sqrt(2)) * common
     return x, y
 end
+---@endsection
 
 ---This is an algorithm that converts coordinates from a circular space into a square space!
 ---@param u number the u coordinate in the circular space range: -1 - 1
 ---@param v number the v coordinate in the circular space range: -1 - 1
 ---@return number x the x coordinate in the square space range: -1 - 1
 ---@return number y the y coordinate in the square space range -1 - 1
+---@section twoSquircularMapping
 ---source: http://arxiv.org/abs/1509.06344
 function twoSquircularMapping(u, v)
     signuv = math.sign(u * v)
@@ -67,12 +74,14 @@ function twoSquircularMapping(u, v)
     y = u == 0 and v or signuv / u * math.sqrt(2) * common
     return x, y
 end
+---@endsection
 
 ---maps UV coordinates onto the unit circle even though they are outside
 ---@param u number the original x value
 ---@param v number the original y value
 ---@return number u the new x value
 ---@return number v the new y value
+---@section uvCoordinatesOntoUnitCircle
 ---based on the pythagorean therum and the fact that dividing by the distance will always make it return into the unit circle with radius 1
 ---see: https://www.desmos.com/calculator/ob8rg6n35e?lang=de for the base idea visualized
 function uvCoordinatesOntoUnitCircle(u, v)
@@ -94,3 +103,4 @@ function uvCoordinatesOntoUnitCircle(u, v)
         return u, v
     end
 end
+---@endsection
