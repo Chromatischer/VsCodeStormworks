@@ -37,12 +37,16 @@ do
 end
 ---@endsection
 
+<<<<<<< HEAD
 
 --[====[ IN-GAME CODE ]====]
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
+=======
+require("Utils.Utils")
+>>>>>>> 0edf49b56e3535f71d45a973f2088bf34ccd6014
 require("Utils.Coordinate.radarToGlobalCoordinates")
 
 ticks = 0
@@ -264,7 +268,11 @@ function onDraw()
         screen.drawLine(radarDisplayRotationX, radarDisplaySquareStartY, radarDisplayRotationX, radarDisplaySquareStartY + radarDisplaySize / 2)
         --#endregion
 
+<<<<<<< HEAD
         --#region debugPoints
+=======
+        --#region debug points
+>>>>>>> 0edf49b56e3535f71d45a973f2088bf34ccd6014
         --debugPoints = {{u = 0, v = 0}, {u = 0, v = 2}, {u = 2, v = 0}, {u = 0, v = -2}, {u = -2, v = 0}, {u = 2, v = 2}, {u = -2, v = -2}, {u = 2, v = -2}, {u = -1, v = 1}}
         --for index, point in ipairs(debugPoints) do
         --    u, v = uvCoordinatesOntoUnitCircle(point.u, point.v)
@@ -290,6 +298,10 @@ function onDraw()
         --    end
         --end
         --#endregion
+<<<<<<< HEAD
+=======
+    else
+>>>>>>> 0edf49b56e3535f71d45a973f2088bf34ccd6014
 
         for index, button in ipairs(buttons) do
             drawButton(button.x, button.y, button.w, button.h, button.string, button.pressed)
