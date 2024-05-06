@@ -34,27 +34,7 @@ function simpleStretching(u, v)
     return x, y
 end
 
----This is an algorithm that converts coordinates from a circular space into a square space!
----@param u number the u coordinate in the circular space range: -1 - 1
----@param v number the v coordinate in the circular space range: -1 - 1
----@return number x the x coordinate in the square space range: -1 - 1
----@return number y the y coordinate in the square space range -1 - 1
----source: http://arxiv.org/abs/1509.06344
-function ellipticalGridMapping(u, v)
-    u2 = u ^ 2
-    v2 = v ^ 2
-    sqrt2 = 2 * math.sqrt(2)
 
-    x = 0.5 * math.sqrt(2 + u2 - v2 + sqrt2 * u) - 0.5 * math.sqrt(2 + u2 - v2 - sqrt2 * u)
-    y = 0.5 * math.sqrt(2 - u2 + v2 + sqrt2 * v) - 0.5 * math.sqrt(2 - u2 + v2 - sqrt2 * v)
-
-    x = u == 0 and u or x
-    y = v == 0 and v or y
-    --if u2 + v2 > 1 then
-    --    print("EROR")
-    --end
-    return x, y
-end
 
 ---This is an algorithm that converts coordinates from a circular space into a square space!
 ---@param u number the u coordinate in the circular space range: -1 - 1
