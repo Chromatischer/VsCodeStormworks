@@ -50,6 +50,8 @@ twsBoxSize = 100
 twsMaxUpdateTime = 1200
 twsMaxCoastTime = twsMaxUpdateTime * 5
 twsActivationNumber = 3
+mapZooms = {0.1, 0.2, 0.5, 1, 2, 5, 7, 9, 11, 13, 15, 17, 20, 25, 30, 35, 40, 45, 50}
+mapZoom = 6
 ticks = 0
 function onTick()
     ticks = ticks + 1
@@ -107,5 +109,9 @@ function onTick()
 end
 
 function onDraw()
+    Swidth = screen.getWidth()
+    Sheight = screen.getHeight()
+
+    screen.drawMap(Swidth / 2, Sheight / 2, mapZooms[mapZoom])
 end
 
