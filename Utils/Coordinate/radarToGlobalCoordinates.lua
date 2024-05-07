@@ -16,3 +16,13 @@ function radarToGlobalCoordinates(contactDistance,contactYaw,contactPitch,gpsX,g
     z = contactDistance * math.tan(globalPitch)
     return {x=x+gpsX, y=y+gpsY, z=z+gpsZ, age=100}
 end
+
+---takes the output of the standard function and converts it to a coordinate object
+---@param radarToGlobalCoordinate table coordinates
+---@return Coordinate Coordinate the Coordinate object holding the same data as before
+---@return number age the age value seperated
+---@section convertToCoordinateObj
+function convertToCoordinateObj(radarToGlobalCoordinate)
+    return Coordinate.new(radarToGlobalCoordinate.x, radarToGlobalCoordinate.y, radarToGlobalCoordinate.z), radarToGlobalCoordinate.age
+end
+---@endsection

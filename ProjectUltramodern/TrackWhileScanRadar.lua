@@ -6,13 +6,6 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
-
---[====[ HOTKEYS ]====]
--- Press F6 to simulate this file
--- Press F7 to build the project, copy the output from /_build/out/ into the game to use
--- Remember to set your Author name etc. in the settings: CTRL+COMMA
-
-
 --[====[ EDITABLE SIMULATOR CONFIG - *automatically removed from the F7 build output ]====]
 ---@section __LB_SIMULATOR_ONLY__
 do
@@ -44,17 +37,32 @@ do
 end
 ---@endsection
 
+require("Utils.Utils")
+require("Utils.TrackWhileScanUtils")
+require("Utils.Coordinate.radarToGlobalCoordinates")
 
---[====[ IN-GAME CODE ]====]
 
--- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
--- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-
+tempRadarData = {}
 ticks = 0
 function onTick()
     ticks = ticks + 1
+    gpsX = input.getNumber(1)
+    gpsZ = input.getNumber(2)
+    gpsY = input.getNumber(3)
+    pitch = input.getNumber(4)
+    compas = input.getNumber(5)
+    monitorTouchX = input.getNumber(6)
+    monitorTouchY = input.getNumber(7)
+    for i = 0, 3 do
+        if input.getBool(2 + i) then --if there is a contact detected calculate the global coordinates of it
+            radarDistance = 8 + i * 3
+            radarAzimuth = 9 + i * 3
+            radarElevation = 10 + i * 3
+            tempRadarData[i] = convertToCoordinateObj(radarToGlobalCoordinates(radarDistance, radarAzimuth, radarElevation, gpsX, gpsY, gpsZ, compas, pitch)) --safe in a tempData Array
+        end
+    end
 end
 
 function onDraw()
-    screen.drawCircle(16,16,5)
 end
+
