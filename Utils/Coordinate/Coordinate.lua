@@ -67,6 +67,18 @@ function Coordinate:get2DAngleTo(coordinate)
 end
 ---@endsection
 
+---add X, Y and Z to the coordinates
+---@param x number the X increment
+---@param y number the Y increment
+---@param z? number the Z increment
+---@section add
+function Coordinate:add(x, y, z)
+    z = z == nil and 0 or z
+    self.x = self.x + x
+    self.y = self.y + y
+    self.z = self.z == nil and nil or self.z + z
+end
+---@endsection
 
 ---@section testing
 first = Coordinate.new(0, 0)

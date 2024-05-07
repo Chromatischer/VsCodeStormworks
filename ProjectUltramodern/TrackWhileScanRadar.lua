@@ -40,9 +40,16 @@ end
 require("Utils.Utils")
 require("Utils.TrackWhileScanUtils")
 require("Utils.Coordinate.radarToGlobalCoordinates")
-
+require("Utils.Coordinate.Coordinate")
 
 tempRadarData = {}
+tracks = {}
+lastRadarRotation = 0
+
+twsBoxSize = 100
+twsMaxUpdateTime = 1200
+twsMaxCoastTime = twsMaxUpdateTime * 5
+twsActivationNumber = 3
 ticks = 0
 function onTick()
     ticks = ticks + 1
@@ -53,6 +60,7 @@ function onTick()
     compas = input.getNumber(5)
     monitorTouchX = input.getNumber(6)
     monitorTouchY = input.getNumber(7)
+    radarRotation = input.getNumber(20)
     for i = 0, 3 do
         if input.getBool(2 + i) then --if there is a contact detected calculate the global coordinates of it
             radarDistance = 8 + i * 3
@@ -61,6 +69,41 @@ function onTick()
             tempRadarData[i] = convertToCoordinateObj(radarToGlobalCoordinates(radarDistance, radarAzimuth, radarElevation, gpsX, gpsY, gpsZ, compas, pitch)) --safe in a tempData Array
         end
     end
+
+    for index, track in ipairs(tracks) do --every tick executed for every track
+        track:addUpdateTime() -- adding time
+
+        --#region adding to track
+        for tardex, target in ipairs(tempRadarData) do --cross matching with every target
+            boxLocation, boxSize = track:getBoxInfo()
+            if boxLocation:get3DDistanceTo(target) < boxSize then -- target is inside the tracking box
+                track:addCoordinate(target) -- adding target to track
+                table.remove(tempRadarData, tardex) -- removing target from temp storage
+                break --exiting the loop because we dont want double targets in one iteration
+            end
+        end
+        --#endregion
+
+        --#region coasting and deleting
+        if track:getUpdateTime() > track:getMaxUpdateTime() then -- coasting and deleting
+            if track:getState() == 0 then
+                track:coast()
+            else
+                if track:getState() == 2 or (track:getState() == 1 and track:getUpdateTime() > track:getMaxCoastTime()) then
+                    table.remove(tracks, index) -- deleting from array if coasted or if inactive and no more data is available
+                end
+            end
+        end
+        --#endregion
+
+        track:predict()
+    end
+
+    --#region spawning new tracks
+    for index, target in ipairs(tempRadarData) do
+        tracks[#tracks+1] = Track.new(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber)
+    end
+    --#endregion
 end
 
 function onDraw()
