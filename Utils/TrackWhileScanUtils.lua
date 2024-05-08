@@ -104,9 +104,16 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         ---@section getHistoryLength
         getHistoryLength = function(self)
             return #self.history
-        end
+        end,
         ---@endsection
 
+        getLastPosition = function(self)
+            return self.history[#self.history]
+        end,
+
+        getDeltas = function (self)
+            return newCoordinate(self.deltaX, self.deltaY, self.deltaZ)
+        end
     }
     return newObject
 end

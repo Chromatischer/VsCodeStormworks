@@ -2,3 +2,5 @@
 !/_build/_buildactions.lua
 Docs/Documentation.pdf
 todomd.defaultFile
+ProjectUltramodern/.hidden
+.vscode/settings.json

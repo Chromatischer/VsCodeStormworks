@@ -44,6 +44,8 @@ require("Utils.Coordinate.Coordinate")
 
 tempRadarData = {}
 tracks = {}
+trackOnScreenPositions = {}
+selectedTrack = nil
 lastRadarRotation = 0
 
 twsBoxSize = 100
@@ -106,12 +108,28 @@ function onTick()
         tracks[#tracks+1] = newTrack(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber)
     end
     --#endregion
+
+    monitorTouchCoord = newCoordinate(monitorTouchX, monitorTouchY)
+    for index, position in ipairs(trackOnScreenPositions) do
+        if monitorIsTouched and position:get2DDistanceTo(monitorTouchCoord) < 3 then
+            selectedTrack = index
+        end
+    end
 end
 
 function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
 
-    screen.drawMap(Swidth / 2, Sheight / 2, mapZooms[mapZoom])
+    screen.drawMap(gpsX, gpsY, mapZooms[mapZoom])
+    for index, track in ipairs(tracks) do
+        trackOnScreenPositions[index] = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getLastPosition():getX(), track:getLastPosition():getY()))
+        if selectedTrack == nil then
+            if track:getState() == 0 then
+                screen.setColor(255, 0, 0)
+                screen.drawRectF()
+            end
+        else
+        end
+    end
 end
-
