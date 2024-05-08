@@ -4,7 +4,6 @@
 ---@param maxUpdateTime number the maximum amount of time that a track stays active without getting new data
 ---@param coastTime number the maximum amount of time a track stays coasted without new data
 ---@param activationNumber number the amount of coordinates needed to activate a track from inactive state
----@section intializer
 function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumber)
     local newObject = {
         history = { coordinate }, -- all the coordinate data associated with the track
@@ -111,4 +110,3 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
     }
     return newObject
 end
----@endsection

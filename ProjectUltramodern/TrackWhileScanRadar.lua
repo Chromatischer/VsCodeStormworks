@@ -103,7 +103,7 @@ function onTick()
 
     --#region spawning new tracks
     for index, target in ipairs(tempRadarData) do
-        tracks[#tracks+1] = Track.new(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber)
+        tracks[#tracks+1] = newTrack(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber)
     end
     --#endregion
 end

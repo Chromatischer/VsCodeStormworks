@@ -78,13 +78,13 @@ function newCoordinate(x, y, z)
     return newObj
 end
 
----@section testing
-first = newCoordinate(0, 0)
-second = newCoordinate(0, 1, 1)
-third = newCoordinate(0, 0, 0)
-print(math.deg(first:get2DAngleTo(second)))
-print(first:getIs2D())
-print(second:getIs2D())
-print(third:getIs2D())
-print(second:get3DDistanceTo(third))
----@endsection
+-- ---@section __LB_SIMULATOR_ONLY__
+-- first = newCoordinate(0, 0)
+-- second = newCoordinate(0, 1, 1)
+-- third = newCoordinate(0, 0, 0)
+-- print(math.deg(first:get2DAngleTo(second)))
+-- print(first:getIs2D())
+-- print(second:getIs2D())
+-- print(third:getIs2D())
+-- print(second:get3DDistanceTo(third))
+-- ---@endsection

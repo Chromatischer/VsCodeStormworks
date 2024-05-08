@@ -23,6 +23,6 @@ end
 ---@return number age the age value seperated
 ---@section convertToCoordinateObj
 function convertToCoordinateObj(radarToGlobalCoordinate)
-    return Coordinate.new(radarToGlobalCoordinate.x, radarToGlobalCoordinate.y, radarToGlobalCoordinate.z), radarToGlobalCoordinate.age
+    return newCoordinate(radarToGlobalCoordinate.x, radarToGlobalCoordinate.y, radarToGlobalCoordinate.z), radarToGlobalCoordinate.age
 end
 ---@endsection
