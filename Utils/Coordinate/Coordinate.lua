@@ -1,3 +1,5 @@
+--TODO: fix the fact that the coordinate does not know if it is 2D or 3D and will return a Z coorinate nevertheless!
+
 ---creates a new coordinate with the specified X and Y position
 ---@param x number the X coordinate of the Coordinate
 ---@param y number the Y coordinate of the Coordinate
@@ -7,7 +9,7 @@ function newCoordinate(x, y, z)
     local newObj = {
         x = x,
         y = y,
-        is2D = (z == nil),
+        is2D = (z == nil), --this is working!
         z = z == nil and 0 or z,
 
         getX = function(self)
@@ -19,7 +21,7 @@ function newCoordinate(x, y, z)
         end,
 
         getZ = function(self)
-            return self.is2D and nil or self.z
+            return self.is2D and nil or self.z --this should return nil but does not! Why?
         end,
 
         getIs2D = function(self)
@@ -72,7 +74,7 @@ function newCoordinate(x, y, z)
             z = z == nil and 0 or z
             self.x = self.x + x
             self.y = self.y + y
-            self.z = self.is2D and self.z or self.z + z
+            self.z = self.is2D and self.z or self.z + z --check this shit!
         end,
         ---@endsection
 
