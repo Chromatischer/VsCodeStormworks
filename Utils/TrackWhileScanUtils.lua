@@ -113,6 +113,14 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
 
         getPrediction = function (self)
             return self.prediction
+        end,
+        
+        getLastPosition = function(self)
+            return self.history[#self.history]
+        end,
+
+        getDeltas = function (self)
+            return newCoordinate(self.deltaX, self.deltaY, self.deltaZ)
         end
     }
     return newObject
