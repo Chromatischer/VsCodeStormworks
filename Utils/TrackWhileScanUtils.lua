@@ -44,11 +44,11 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         addCoordinate = function(self, coordinate)
             self.history[#self.history + 1] = coordinate
             -- updating delta values also using WMA and dividing by updateTime to get deltas per Tick!
-            self.deltaX = ((self.history[#self.history]:getX() - self.history[#self.history - 1]:getX()) / self.updateTime()) *
+            self.deltaX = ((self.history[#self.history]:getX() - self.history[#self.history - 1]:getX()) / self.updateTime) *
                 0.5 + (self.deltaX * 0.5)
-            self.deltaY = ((self.history[#self.history]:getY() - self.history[#self.history - 1]:getY()) / self.updateTime()) *
+            self.deltaY = ((self.history[#self.history]:getY() - self.history[#self.history - 1]:getY()) / self.updateTime) *
                 0.5 + (self.deltaY * 0.5)
-            self.deltaZ = ((self.history[#self.history]:getZ() - self.history[#self.history - 1]:getZ()) / self.updateTime()) *
+            self.deltaZ = ((self.history[#self.history]:getZ() - self.history[#self.history - 1]:getZ()) / self.updateTime) *
                 0.5 + (self.deltaZ * 0.5)
             self.speed = math.sqrt(self.deltaX ^ 2 + self.deltaY ^ 2 + self.deltaZ ^ 2) *
                 60                                           -- is m / tick * 60 for m / s
@@ -97,10 +97,20 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         ---@return number number the size of the tracking box
         getBoxInfo = function(self)
             --return prediction only for coasted targets not for active or inactive ones
-            return (self.state == 1) and self.prediction or self.history[#self.history], self.boxSize
+            if self.state == 0 or self.state == 2 then
+                location = self.history[#self.history]
+            else
+                if self.prediction then
+                    location = self.prediction
+                else
+                    location = self.history[#self.history]
+                end
+            end
+            return self.history[#self.history], self.boxSize
         end,
-        ---@return integer int the length of the history
 
+        ---returns the length of the history
+        ---@return integer int the length of the history
         ---@section getHistoryLength
         getHistoryLength = function(self)
             return #self.history
@@ -114,13 +124,13 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         getPrediction = function (self)
             return self.prediction
         end,
-        
-        getLastPosition = function(self)
-            return self.history[#self.history]
-        end,
 
         getDeltas = function (self)
             return newCoordinate(self.deltaX, self.deltaY, self.deltaZ)
+        end,
+
+        getAngle = function (self)
+            return self.angle
         end
     }
     return newObject

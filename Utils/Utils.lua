@@ -112,5 +112,17 @@ function getCommaPlaces(number)
 end
 ---@endsection
 
+---returns the pixel length of a distance on the screen!
+---@param scale number the scale factor set on the drawMap function
+---@param screenWidth number the width of the screen
+---@param screenHeight number the height of the screen
+---@param distance number the distance in meters
+---@return number number the number of pixels the given distance corresponds to on the screen
+---@section onMapDistance
+function onMapDistance(scale, screenWidth, screenHeight, distance)
+    return (distance / (scale * 1000)) * math.min(screenWidth, screenHeight) -- I am not sure about the math.min part tbh!
+end
+---@endsection
+
 --- constants
 math.piHalf = math.pi / 2

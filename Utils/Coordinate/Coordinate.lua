@@ -4,13 +4,13 @@
 ---@param x number the X coordinate of the Coordinate
 ---@param y number the Y coordinate of the Coordinate
 ---@param z? number optional the Z coordinate of the Coordinate
----@return table
+---@return table Coordinate the newly created coordinate
 function newCoordinate(x, y, z)
     local newObj = {
         x = x,
         y = y,
         is2D = (z == nil), --this is working!
-        z = z == nil and 0 or z,
+        z = z,
 
         getX = function(self)
             return self.x
@@ -21,7 +21,7 @@ function newCoordinate(x, y, z)
         end,
 
         getZ = function(self)
-            return self.is2D and nil or self.z --this should return nil but does not! Why?
+            return self.z --this should return nil but does not! Why?
         end,
 
         getIs2D = function(self)
@@ -29,7 +29,7 @@ function newCoordinate(x, y, z)
         end,
 
         getCoordinates = function(self)
-            return self.x, self.y, self.is2D and nil or self.z
+            return self.x, self.y, self.z
         end,
 
         setCoordinates = function(self, setX, setY, setZ)
@@ -50,8 +50,14 @@ function newCoordinate(x, y, z)
 
         get3DDistanceTo = function(self, coordinate)
             if not self.is2D and not coordinate:getIs2D() then
-                return math.sqrt((self.x - coordinate:getX()) ^ 2 + (self.y - coordinate:getY()) ^ 2 +
-                    (self.z - coordinate:getZ()) ^ 2)
+                ret = math.sqrt((self.x - coordinate:getX()) ^ 2 + (self.y - coordinate:getY()) ^ 2 + (self.z - coordinate:getZ()) ^ 2)
+                if isInf(ret) or isNan(ret) or ret == nil then
+                    print("raaaa!")
+                else
+                    return ret
+                end
+            else
+                print("boo!")
             end
         end,
 
@@ -70,11 +76,30 @@ function newCoordinate(x, y, z)
         ---@param z? number the Z increment
         ---@section add
         add = function(self, x, y, z)
-            print(x, y, z)
-            z = z == nil and 0 or z
             self.x = self.x + x
             self.y = self.y + y
-            self.z = self.is2D and self.z or self.z + z --check this shit!
+            if not self.is2D and not z == nil then
+                self.z = self.z + z
+            else
+            --     ---@section __LB_SIMULATOR_ONLY__
+            --     if self.is2D and z then
+            --         error("unable to add 3D position to 2D coordinate!")
+            --     end
+            --     if z == nil and not self.is2D then
+            --         error("Z is nil where a 3D coordinate is expected!")
+            --     end
+            end
+            -- ---@endsection
+        end,
+        ---@endsection
+        
+        ---add X, Y and Z to the coordinates. WILL NOT CONVERT THE COORDINATE INTO A 3D WHEN ADDING Z
+        ---@param x number the X increment
+        ---@param y number the Y increment
+        ---@section add
+        add2D = function(self, x, y)
+            self.x = self.x + x
+            self.y = self.y + y
         end,
         ---@endsection
 
@@ -83,27 +108,11 @@ function newCoordinate(x, y, z)
         ---@section setIs2D
         setIs2D = function(self, state)
             self.is2D = state
+            if state == false and self.z == nil then
+                self.z = 0
+            end
         end
         ---@endsection
     }
     return newObj
 end
-
--- ---@section __LB_SIMULATOR_ONLY__
--- first = newCoordinate(0, 0)
--- second = newCoordinate(0, 1, 1)
--- third = newCoordinate(0, 0, 0)
--- print(math.deg(first:get2DAngleTo(second)))
--- print(first:getIs2D())
--- print(second:getIs2D())
--- print(third:getIs2D())
--- print(second:get3DDistanceTo(third))
--- ---@endsection
---
-first = newCoordinate(0, 0)
-print(first:getIs2D())
-print(first:getX(), first:getY(), first:getZ())
-first:setIs2D(false)
-first:add(1, 1, 1)
-print(first:getX(), first:getY(), first:getZ())
-print(first:getIs2D())

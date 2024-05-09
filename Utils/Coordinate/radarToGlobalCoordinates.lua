@@ -20,9 +20,8 @@ end
 ---takes the output of the standard function and converts it to a coordinate object
 ---@param radarToGlobalCoordinate table coordinates
 ---@return Coordinate Coordinate the Coordinate object holding the same data as before
----@return number age the age value seperated
 ---@section convertToCoordinateObj
 function convertToCoordinateObj(radarToGlobalCoordinate)
-    return newCoordinate(radarToGlobalCoordinate.x, radarToGlobalCoordinate.y, radarToGlobalCoordinate.z), radarToGlobalCoordinate.age
+    return newCoordinate(radarToGlobalCoordinate.x, radarToGlobalCoordinate.y, radarToGlobalCoordinate.z)
 end
 ---@endsection
