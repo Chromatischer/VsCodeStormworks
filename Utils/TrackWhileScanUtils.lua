@@ -104,9 +104,16 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         ---@section getHistoryLength
         getHistoryLength = function(self)
             return #self.history
-        end
+        end,
         ---@endsection
 
+        getLatestHistoryPosition = function (self)
+            return self.history[#self.history]
+        end,
+
+        getPrediction = function (self)
+            return self.prediction
+        end
     }
     return newObject
 end

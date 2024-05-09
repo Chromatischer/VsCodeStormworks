@@ -44,6 +44,7 @@ require("Utils.Coordinate.Coordinate")
 
 tempRadarData = {}
 tracks = {}
+trackOnScreenPositions = {}
 lastRadarRotation = 0
 
 twsBoxSize = 100
@@ -112,6 +113,11 @@ function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
 
-    screen.drawMap(Swidth / 2, Sheight / 2, mapZooms[mapZoom])
+    screen.drawMap(gpsX, gpsY, mapZooms[mapZoom])
+
+    for index, track in ipairs(tracks) do
+        onScreenX, onScreenY = map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY())
+        trackOnScreenPositions[index] = newCoordinate(onScreenX, onScreenY)
+    end
 end
 
