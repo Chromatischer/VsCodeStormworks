@@ -18,21 +18,17 @@ do
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
     ---@param ticks     number Number of ticks since simulator started
     function onLBSimulatorTick(simulator, ticks)
-
         -- touchscreen defaults
         local screenConnection = simulator:getTouchScreen(1)
-        simulator:setInputBool(1, screenConnection.isTouched)
-        simulator:setInputNumber(1, screenConnection.width)
-        simulator:setInputNumber(2, screenConnection.height)
-        simulator:setInputNumber(3, screenConnection.touchX)
-        simulator:setInputNumber(4, screenConnection.touchY)
-
-        -- NEW! button/slider options from the UI
-        simulator:setInputBool(31, simulator:getIsClicked(1))       -- if button 1 is clicked, provide an ON pulse for input.getBool(31)
-        simulator:setInputNumber(31, simulator:getSlider(1))        -- set input 31 to the value of slider 1
-
-        simulator:setInputBool(32, simulator:getIsToggled(2))       -- make button 2 a toggle, for input.getBool(32)
-        simulator:setInputNumber(32, simulator:getSlider(2) * 50)   -- set input 32 to the value from slider 2 * 50
+        simulator:setInputNumber(1, 0)
+        simulator:setInputNumber(2, 0)
+        simulator:setInputNumber(3, 0)
+        simulator:setInputNumber(4, 0)
+        simulator:setInputNumber(5, 0)
+        simulator:setInputNumber(8, 25)
+        simulator:setInputNumber(9, 0)
+        simulator:setInputNumber(10, 0)
+        simulator:setInputBool(2, true)
     end;
 end
 ---@endsection
@@ -49,11 +45,11 @@ trackOnScreenPositions = {}
 selectedTrack = nil
 lastRadarRotation = 0
 
-twsBoxSize = 100
-twsMaxUpdateTime = 60 * 60 -- seconds -> ticks
+twsBoxSize = 200
+twsMaxUpdateTime = 10 * 60 -- seconds -> ticks
 twsMaxCoastTime = twsMaxUpdateTime * 5
 twsActivationNumber = 3
-mapZooms = {0.1, 0.2, 0.5, 1, 2, 5, 7, 9, 11, 13, 15, 17, 20, 25, 30, 35, 40, 45, 50}
+mapZooms = { 0.1, 0.2, 0.5, 1, 2, 5, 7, 9, 11, 13, 15, 17, 20, 25, 30, 35, 40, 45, 50 }
 mapZoom = 3
 ticks = 0
 function onTick()
@@ -72,56 +68,51 @@ function onTick()
             radarDistance = input.getNumber(8 + i * 3) --this was THE most stupid bug EVER!
             radarAzimuth = input.getNumber(9 + i * 3)
             radarElevation = input.getNumber(10 + i * 3)
-            if isInf(radarDistance) or isNan(radarDistance) or isInf(radarAzimuth) or isNan(radarAzimuth) or isInf(radarElevation) or isNan(radarElevation) then
-                print("Im fucked!")
-            end
-            if isInf(gpsX) or isNan(gpsX) or isInf(gpsY) or isNan(gpsY) or isInf(gpsZ) or isNan(gpsZ) then
-                print("eqtjez")
-            end
             if radarDistance > 20 then
                 globalCoordinate = convertToCoordinateObj(radarToGlobalCoordinates(radarDistance, radarAzimuth, radarElevation, gpsX, gpsY, gpsZ, compas, pitch))
-                if not globalCoordinate:getX() or not globalCoordinate:getY() or not globalCoordinate:getZ() or isInf(globalCoordinate:getX()) or isNan(globalCoordinate:getX()) or isInf(globalCoordinate:getY()) or isNan(globalCoordinate:getY()) or isInf(globalCoordinate:getZ()) or isNan(globalCoordinate:getZ()) then
-                    print("im scared!")
-                end
-                tempRadarData[#tempRadarData+1] = globalCoordinate --safe in a tempData Array
+                tempRadarData[#tempRadarData + 1] = globalCoordinate --safe in a tempData Array
             end
         end
     end
 
     for index = #tracks, 1, -1 do
-        track = tracks[index]
-        track:addUpdateTime() -- adding time
+        track = tracks[index] -- I want to fucking kill myself... THIS WAS THE PROBLEM!!!
+        if track then
+            track:addUpdateTime() -- adding time
 
-        --#region adding to track
-        for tardex = #tempRadarData, 1, -1 do
-            target = tempRadarData[tardex]
-            boxLocation, boxSize = track:getBoxInfo()
-            checkForWrong(boxLocation)
-            if boxLocation:get3DDistanceTo(target) < boxSize then -- target is inside the tracking box
-                track:addCoordinate(target) -- adding target to track
-                table.remove(tempRadarData, tardex) -- removing target from temp storage
+            --#region adding to track
+            for tardex = #tempRadarData, 1, -1 do
+                target = tempRadarData[tardex]
+                boxLocation = track:getLatestHistoryPosition()
+                boxSize = track:getBoxSize()
+                if math.abs(boxLocation:get3DDistanceTo(target)) < boxSize then -- target is inside the tracking box
+                    track:addCoordinate(target)                       -- adding target to track
+                    table.remove(tempRadarData, tardex)               -- removing target from temp storage
+                end
             end
-        end
-        --#endregion
+            --#endregion
 
-        --#region coasting and deleting
-        if track:getUpdateTime() > track:getMaxUpdateTime() then -- coasting and deleting
-            if track:getState() == 0 then
+            --#region coasting and deleting
+            if track:getState() == 0 and track:getUpdateTime() > track:getMaxUpdateTime() then
                 track:coast()
             else
-                if track:getState() == 2 or (track:getState() == 1 and track:getUpdateTime() > track:getMaxCoastTime()) then
+                if (track:getState() == 2 and track:getUpdateTime() > track:getMaxUpdateTime()) or (track:getState() == 1 and track:getUpdateTime() > track:getMaxCoastTime()) then
                     table.remove(tracks, index) -- deleting from array if coasted or if inactive and no more data is available
                 end
             end
-        end
-        --#endregion
+            --#endregion
 
-        track:predict()
+            track:predict()
+        end
     end
 
     --#region spawning new tracks
-    for index, target in ipairs(tempRadarData) do
-        tracks[#tracks+1] = newTrack(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber)
+    for tardex = #tempRadarData, 1, -1 do
+        target = tempRadarData[tardex]
+        if target then
+            table.insert(tracks, newTrack(target, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber))
+            table.remove(tempRadarData, tardex)
+        end
     end
     --#endregion
 
@@ -139,20 +130,29 @@ function onDraw()
 
     screen.drawMap(gpsX, gpsY, mapZooms[mapZoom])
     for index, track in ipairs(tracks) do
-        trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
+        trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight,
+            track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
         trackOnScreenPositions[index] = trackOnScreenPosition
         screen.setColor(0, 0, 255, 50)
         screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), track:getUpdateTime())
-        if selectedTrack == nil then
+        --if selectedTrack == nil then
+        if true then
             if track:getState() == 0 then
                 screen.setColor(255, 0, 0)
-                p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + 90), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + 90))
-                p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - 90), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - 90))
-                screen.drawLine(p1:getX(), p1:getY(), p2:getX(), p2:getY())
+                p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + math.rad(90)))
+                p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - math.rad(90)))
+                p3 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle()), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()))
+                p4 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(180)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()) + math.rad(180))
                 if track:getHistoryLength() < 10 then
-                    --#region for recently activated active targets
+                    screen.drawLine(p1:getX(), p1:getY(), p2:getX(), p2:getY())
                 else
+                    screen.drawLine(p1:getX(), p1:getY(), p4:getX(), p4:getY())
+                    screen.drawLine(p4:getX(), p4:getY(), p2:getX(), p2:getY())
+                    screen.drawLine(p2:getX(), p2:getY(), p3:getX(), p3:getY())
+                    screen.drawLine(p3:getX(), p3:getY(), p1:getX(), p1:getY())
                 end
+                p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
+                screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
             end
         else
         end
@@ -161,12 +161,7 @@ function onDraw()
     screen.drawText(0, 0, "#" .. #tracks)
     screen.drawText(0, 6, string.format("%02d", math.abs(math.floor(radarRotation * 360))))
     if tempRadarData[0] then
-        screen.drawText(0, 12, tempRadarData[0]:getX() .. " " .. tempRadarData[0]:getY() .. " " .. tempRadarData[0]:getZ())
-    end
-end
-
-function checkForWrong(check)
-    if not check or isInf(check:getX()) or isNan(check:getX()) or isInf(check:getY()) or isNan(check:getY()) or isInf(check:getZ()) or isNan(check:getZ()) then
-        print("fiynd")
+        screen.drawText(0, 12,
+            tempRadarData[0]:getX() .. " " .. tempRadarData[0]:getY() .. " " .. tempRadarData[0]:getZ())
     end
 end

@@ -111,6 +111,14 @@ function newCoordinate(x, y, z)
             if state == false and self.z == nil then
                 self.z = 0
             end
+        end,
+        ---@endsection
+
+        ---returns the X, Y and Z coordinate as the string
+        ---@return string string the string
+        ---@section getStr
+        getString = function (self)
+            return "X: " .. self.x .. " Y: " .. self.y  .. " Z: " .. self.z
         end
         ---@endsection
     }

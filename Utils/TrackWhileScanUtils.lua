@@ -54,8 +54,8 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
                 60                                           -- is m / tick * 60 for m / s
             self.angle = math.atan(self.deltaY, self.deltaX) -- 2D direction
             self.updateTime = 0
-            --activating the track if it is inactive and has a certain number of tracking points already or is coasted
-            if (#self.history > self.activationNumber and self.state == 2) or self.state == 1 then
+            --activating the track if it is inactive and has a certain number of tracking points
+            if #self.history > self.activationNumber and self.state == 2 then
                 self:activate()
             end
         end,
@@ -106,7 +106,7 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
                     location = self.history[#self.history]
                 end
             end
-            return self.history[#self.history], self.boxSize
+            return location, self.boxSize
         end,
 
         ---returns the length of the history
@@ -131,6 +131,10 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
 
         getAngle = function (self)
             return self.angle
+        end,
+
+        getSpeed = function (self)
+            return self.speed
         end
     }
     return newObject
