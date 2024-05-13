@@ -48,7 +48,7 @@ lastRadarRotation = 0
 twsBoxSize = 200
 twsMaxUpdateTime = 10 * 60 -- seconds -> ticks
 twsMaxCoastTime = twsMaxUpdateTime * 5
-twsActivationNumber = 3
+twsActivationNumber = 1
 mapZooms = { 0.1, 0.2, 0.5, 1, 2, 5, 7, 9, 11, 13, 15, 17, 20, 25, 30, 35, 40, 45, 50 }
 mapZoom = 3
 ticks = 0
@@ -130,31 +130,30 @@ function onDraw()
 
     screen.drawMap(gpsX, gpsY, mapZooms[mapZoom])
     for index, track in ipairs(tracks) do
-        trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight,
-            track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
-        trackOnScreenPositions[index] = trackOnScreenPosition
-        screen.setColor(0, 0, 255, 50)
-        screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), track:getUpdateTime())
-        --if selectedTrack == nil then
-        if true then
-            if track:getState() == 0 then
-                screen.setColor(255, 0, 0)
-                p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + math.rad(90)))
-                p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - math.rad(90)))
-                p3 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle()), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()))
-                p4 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(180)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()) + math.rad(180))
-                if track:getHistoryLength() < 10 then
-                    screen.drawLine(p1:getX(), p1:getY(), p2:getX(), p2:getY())
-                else
-                    screen.drawLine(p1:getX(), p1:getY(), p4:getX(), p4:getY())
-                    screen.drawLine(p4:getX(), p4:getY(), p2:getX(), p2:getY())
-                    screen.drawLine(p2:getX(), p2:getY(), p3:getX(), p3:getY())
-                    screen.drawLine(p3:getX(), p3:getY(), p1:getX(), p1:getY())
-                end
-                p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
-                screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
+        if track:getState() == 0 or track:getState() == 1 then
+            trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight,
+                track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
+            trackOnScreenPositions[index] = trackOnScreenPosition
+            --screen.setColor(0, 0, 255, 50)
+            screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), math.floor(track:getSpeed()))
+            --if selectedTrack == nil then
+            screen.setColor(255, 0, 0)
+            p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + math.rad(90)))
+            p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - math.rad(90)))
+            p3 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle()), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()))
+            p4 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(180)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()) + math.rad(180))
+            --screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), p1:getX() .. " " .. p1:getY())
+            if track:getHistoryLength() > 10 then
+                screen.drawLine(p1:getX(), p1:getY(), p3:getX(), p3:getY())
+                screen.drawLine(p3:getX(), p3:getY(), p2:getX(), p2:getY())
+            else
+                screen.drawLine(p1:getX(), p1:getY(), p4:getX(), p4:getY())
+                screen.drawLine(p4:getX(), p4:getY(), p2:getX(), p2:getY())
+                screen.drawLine(p2:getX(), p2:getY(), p3:getX(), p3:getY())
+                screen.drawLine(p3:getX(), p3:getY(), p1:getX(), p1:getY())
             end
-        else
+            p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
+            screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
         end
     end
     screen.setColor(255, 255, 255)

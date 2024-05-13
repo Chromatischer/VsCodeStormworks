@@ -10,6 +10,7 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         boxSize = boxSize,        -- the size of the bounding box
         bufferTimer = 0,          -- for coasting for example
         updateTime = 0,           -- time since the last update for coasting as well as deleting
+        updateTimes = {},         -- all the update times
         prediction = coordinate,  -- next predicted point at current speed and angle
         speed = 0,
         heading = 0,
@@ -42,21 +43,107 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         ---@param coordinate Coordinate the coordinate of the new contact
         ---@section addCoordinate
         addCoordinate = function(self, coordinate)
+            self.updateTimes[#self.updateTimes + 1] = self.updateTime
             self.history[#self.history + 1] = coordinate
             -- updating delta values also using WMA and dividing by updateTime to get deltas per Tick!
-            self.deltaX = ((self.history[#self.history]:getX() - self.history[#self.history - 1]:getX()) / self.updateTime) *
-                0.5 + (self.deltaX * 0.5)
-            self.deltaY = ((self.history[#self.history]:getY() - self.history[#self.history - 1]:getY()) / self.updateTime) *
-                0.5 + (self.deltaY * 0.5)
-            self.deltaZ = ((self.history[#self.history]:getZ() - self.history[#self.history - 1]:getZ()) / self.updateTime) *
-                0.5 + (self.deltaZ * 0.5)
-            self.speed = math.sqrt(self.deltaX ^ 2 + self.deltaY ^ 2 + self.deltaZ ^ 2) *
-                60                                           -- is m / tick * 60 for m / s
+            --self:calculateMovingAverageDeltas(10)
+            -- updating delta values using EMA and dividing by updateTime to get deltas per Tick!
+            self:calculateExpontentialMovingDeltas(0.001) --this seems to work best
+            -- updating delta values using Kalman Filter and dividing by updateTime to get deltas per Tick!
+            --self:calculateKalmanDeltas(0.01, 1) --this is broken and way too huge for the amount of tokens available
+            self.speed = math.sqrt(self.deltaX ^ 2 + self.deltaY ^ 2 + self.deltaZ ^ 2) * 60 -- is m / tick * 60 for m / s
             self.angle = math.atan(self.deltaY, self.deltaX) -- 2D direction
             self.updateTime = 0
             --activating the track if it is inactive and has a certain number of tracking points
             if #self.history > self.activationNumber and self.state == 2 then
                 self:activate()
+            end
+        end,
+        ---@endsection
+
+        ---calculates the moving average deltas for the last Coordinates inside the averaging window
+        ---@param windowSize number the size of the averaging window (number of values to average over)
+        ---@section calculateMovingAverageDeltas
+        calculateMovingAverageDeltas = function (self, windowSize)
+            sumX = 0
+            sumY = 0
+            sumZ = 0
+            for i = #self.history, #self.history - windowSize, -1 do
+                sumX = sumX + (self.history[i]:getX() / self.updateTimes[i])
+                sumY = sumY + (self.history[i]:getY() / self.updateTimes[i])
+                sumZ = sumZ + (self.history[i]:getZ() / self.updateTimes[i])
+            end
+            self.deltaX = sumX / windowSize
+            self.deltaY = sumY / windowSize
+            self.deltaZ = sumZ / windowSize
+        end,
+        ---@endsection
+
+        ---calculates the expontential moving average deltas
+        ---@param alpha number the influence of the new data on the average
+        ---@section calculateExpontentialMovingDeltas
+        calculateExpontentialMovingDeltas = function (self, alpha)
+            halpha = 1 - alpha
+            updateTime = math.max(1, self.updateTime)
+            self.deltaX = alpha * ((self.history[#self.history]:getX() - self.history[#self.history - 1]:getX()) / updateTime) + halpha * self.deltaX
+            self.deltaY = alpha * ((self.history[#self.history]:getY() - self.history[#self.history - 1]:getY()) / updateTime) + halpha * self.deltaY
+            self.deltaZ = alpha * ((self.history[#self.history]:getZ() - self.history[#self.history - 1]:getZ()) / updateTime) + halpha * self.deltaZ
+        end,
+        ---@endsection
+
+        ---uses the kalman filter to calculate the deltas
+        ---very broken!
+        ---@param Q number the process noise covariance
+        ---@param R number the measurement noise covariance
+        ---@section calculateKalmanDeltas
+        calculateKalmanDeltas = function(self, Q, R)
+            -- Initialize state variables
+            local x = 0 -- state estimate
+            local P = 1 -- error covariance
+
+            if #self.history > 2 and #self.updateTimes > 2 then
+                for i = #self.history, 2, -1 do
+                    -- Prediction step
+                    local x_pred = x
+                    local P_pred = P + Q
+
+                    -- Update step
+                    local y = self.history[i]:getX() - self.history[i - 1]:getX() / math.max(1, self.updateTimes[i])
+                    local K = P_pred / (P_pred + R)
+                    x = x_pred + K * y
+                    P = (1 - K) * P_pred
+
+                    -- Update delta values
+                    self.deltaX = x
+                end
+                for i = #self.history, 2, -1 do
+                    -- Prediction step
+                    local x_pred = x
+                    local P_pred = P + Q
+
+                    -- Update step
+                    local y = self.history[i]:getY() - self.history[i - 1]:getY() / math.max(1, self.updateTimes[i])
+                    local K = P_pred / (P_pred + R)
+                    x = x_pred + K * y
+                    P = (1 - K) * P_pred
+
+                    -- Update delta values
+                    self.deltaY = x
+                end
+                for i = #self.history, 2, -1 do
+                    -- Prediction step
+                    local x_pred = x
+                    local P_pred = P + Q
+
+                    -- Update step
+                    local y = self.history[i]:getZ() - self.history[i - 1]:getZ() / math.max(1, self.updateTimes[i])
+                    local K = P_pred / (P_pred + R)
+                    x = x_pred + K * y
+                    P = (1 - K) * P_pred
+
+                    -- Update delta values
+                    self.deltaZ = x
+                end
             end
         end,
         ---@endsection

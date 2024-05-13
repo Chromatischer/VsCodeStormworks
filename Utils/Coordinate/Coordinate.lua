@@ -92,7 +92,7 @@ function newCoordinate(x, y, z)
             -- ---@endsection
         end,
         ---@endsection
-        
+
         ---add X, Y and Z to the coordinates. WILL NOT CONVERT THE COORDINATE INTO A 3D WHEN ADDING Z
         ---@param x number the X increment
         ---@param y number the Y increment
@@ -119,7 +119,25 @@ function newCoordinate(x, y, z)
         ---@section getStr
         getString = function (self)
             return "X: " .. self.x .. " Y: " .. self.y  .. " Z: " .. self.z
-        end
+        end,
+        ---@endsection
+
+        ---returns the pitch and yaw angle to the coordinate if not 3D will return 0 for pitch and the yaw angle
+        ---@param coordinate Coordinate the coordinate to get the angle to
+        ---@return number number the pitch angle
+        ---@return number number the yaw angle
+        ---@section get3DAngleTo
+        get3DAngleTo = function(self, coordinate)
+            local dx = coordinate:getX() - self.x
+            local dy = coordinate:getY() - self.y
+            local dz = coordinate:getZ() - self.z
+            local pitch = math.atan(dy, math.sqrt(dx^2 + dz^2))
+            local yaw = math.atan(dx, dz)
+            if not self.is2D and not coordinate:getIs2D() then
+                return pitch, yaw
+            end
+                return 0, yaw
+        end,
         ---@endsection
     }
     return newObj
