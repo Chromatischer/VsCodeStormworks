@@ -136,23 +136,27 @@ function onDraw()
         screen.setColor(0, 0, 255, 50)
         screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), track:getUpdateTime())
         --if selectedTrack == nil then
-        if true then
+        if selectedTrack == nil then
             if track:getState() == 0 then
                 screen.setColor(255, 0, 0)
                 p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + math.rad(90)))
                 p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - math.rad(90)))
                 p3 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle()), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()))
                 p4 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(180)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()) + math.rad(180))
-                if track:getHistoryLength() < 10 then
+                p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
+                if track:getHistoryLength() < 10 then --line going "horizontally" to the length of the thingy
                     screen.drawLine(p1:getX(), p1:getY(), p2:getX(), p2:getY())
-                else
+                    --speed line starting at origin
+                    screen.drawLine(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), p5:getX(), p5:getY())
+                else                                  --should be a square that is rotated by 45deg to point towards the speed-line
                     screen.drawLine(p1:getX(), p1:getY(), p4:getX(), p4:getY())
                     screen.drawLine(p4:getX(), p4:getY(), p2:getX(), p2:getY())
                     screen.drawLine(p2:getX(), p2:getY(), p3:getX(), p3:getY())
                     screen.drawLine(p3:getX(), p3:getY(), p1:getX(), p1:getY())
+
+                    --speed line starting at p3
+                    screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
                 end
-                p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
-                screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
             end
         else
         end
