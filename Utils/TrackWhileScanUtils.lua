@@ -8,12 +8,11 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
     local newObject = {
         history = { coordinate }, -- all the coordinate data associated with the track
         boxSize = boxSize,        -- the size of the bounding box
-        bufferTimer = 0,          -- for coasting for example
         updateTime = 0,           -- time since the last update for coasting as well as deleting
         updateTimes = {},         -- all the update times
         prediction = coordinate,  -- next predicted point at current speed and angle
         speed = 0,
-        heading = 0,
+        angle = 0,
         state = 2, -- states: 0-active 1-coasted 2-inactive
         maxUpdateTime = maxUpdateTime,
         maxCoastTime = coastTime,
@@ -91,6 +90,26 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         end,
         ---@endsection
 
+
+        ---combines the exponential moving average with a windowed moving average for a hopefully better result
+        ---@param alpha number the influence of the new data on the average
+        ---@param windowSize number the size of the averaging window (number of values to average over)
+        ---@section calculateExponentialWindowedMovingDeltas
+        calculateExponentialWindowedMovingDeltas = function (self, alpha, windowSize)
+            deltaX = 0
+            deltaY = 0
+            deltaZ = 0
+            halpha = 1 - alpha
+            if #self.history > 2 then
+                for i = #self.history, #self.history - windowSize, -1 do
+                    deltaX = alpha * (self.history[i]:getX() - self.history[i - 1]:getX()) / math.max(1, self.updateTimes[i]) + halpha * deltaX
+                    deltaY = alpha * (self.history[i]:getY() - self.history[i - 1]:getY()) / math.max(1, self.updateTimes[i]) + halpha * deltaY
+                    deltaZ = alpha * (self.history[i]:getZ() - self.history[i - 1]:getZ()) / math.max(1, self.updateTimes[i]) + halpha * deltaZ
+                end
+            end
+        end,
+        ---@endsection
+
         ---uses the kalman filter to calculate the deltas
         ---very broken!
         ---@param Q number the process noise covariance
@@ -148,40 +167,55 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         end,
         ---@endsection
 
+        ---@section addUpdateTime
         addUpdateTime = function(self)
             self.updateTime = self.updateTime + 1
         end,
+        ---@endsection
 
+        ---@section getUpdateTime
         getUpdateTime = function(self)
             return self.updateTime
         end,
+        ---@endsection
 
+        ---@section getMaxUpdateTime
         getMaxUpdateTime = function(self)
             return self.maxUpdateTime
         end,
+        ---@endsection
 
+        ---@section getMaxCoastTime
         getMaxCoastTime = function(self)
             return self.maxCoastTime
         end,
+        ---@endsection
 
         ---updates the prediction with the deltas previously aquired
+        ---@section predict
         predict = function(self)
             self.prediction:add(self.deltaX, self.deltaY, self.deltaZ)
         end,
+        ---@endsection
 
         ---coasts the track
+        ---@section coast
         coast = function(self)
             self.state = 1
         end,
+        ---@endsection
 
         ---activates the track
+        ---@section activate
         activate = function(self)
             self.state = 0
         end,
+        ---@endsection
 
         ---returns the location and size of the tracking box. Location is the latest detection except for if the track is coasted!
         ---@return Coordinate coordinate the location of the tracking box
         ---@return number number the size of the tracking box
+        ---@section getBoxInfo
         getBoxInfo = function(self)
             --return prediction only for coasted targets not for active or inactive ones
             if self.state == 0 or self.state == 2 then
@@ -195,6 +229,7 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
             end
             return location, self.boxSize
         end,
+        ---@endsection
 
         ---returns the length of the history
         ---@return integer int the length of the history
@@ -204,25 +239,53 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
         end,
         ---@endsection
 
+        ---returns the latest position in the history
+        ---@return Coordinate coordinate the latest position
+        ---@section getLatestHistoryPosition
         getLatestHistoryPosition = function (self)
             return self.history[#self.history]
         end,
+        ---@endsection
 
+        ---returns the prediction
+        ---@return Coordinate coordinate the prediction
+        ---@section getPrediction
         getPrediction = function (self)
             return self.prediction
         end,
+        ---@endsection
 
+        ---returns the calculated delta values
+        ---@return Coordinate coordinate the delta values
+        ---@section getDeltas
         getDeltas = function (self)
             return newCoordinate(self.deltaX, self.deltaY, self.deltaZ)
         end,
+        ---@endsection
 
+        ---retruns the 2D angle of the track
+        ---@return number number the angle of travel of the track in radians
+        ---@section getAngle
         getAngle = function (self)
             return self.angle
         end,
+        ---@endsection
 
+        ---returns the speed in m/s
+        ---@return number number the speed of the track in m/s
+        ---@section getSpeed
         getSpeed = function (self)
             return self.speed
-        end
+        end,
+        ---@endsection
+
+        ---getHistory
+        ---@return table table the history of the track
+        ---@section getHistory
+        getHistory = function (self)
+            return self.history
+        end,
+        ---@endsection
     }
     return newObject
 end
