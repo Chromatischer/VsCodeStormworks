@@ -286,6 +286,14 @@ function newTrack(coordinate, boxSize, maxUpdateTime, coastTime, activationNumbe
             return self.history
         end,
         ---@endsection
+
+        ---getUpdateTimes
+        ---@return table table the update times of the track
+        ---@section getUpdateTimes
+        getUpdateTimes = function (self)
+            return self.updateTimes
+        end,
+        ---@endsection
     }
     return newObject
 end

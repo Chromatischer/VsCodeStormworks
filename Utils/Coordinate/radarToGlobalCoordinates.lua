@@ -8,6 +8,7 @@
 ---@param compas number the compas direction of the vehicle
 ---@param pitch number the pitch tilt of the vehicle
 ---@return table numbers the global x, y and z position of the radar contact
+---@section radarToGlobalCoordinates
 function radarToGlobalCoordinates(contactDistance,contactYaw,contactPitch,gpsX,gpsY,gpsZ,compas,pitch)
     globalAngle = math.rad((contactYaw*360 % 360) + compas*-360)
     x = contactDistance * math.sin(globalAngle)
@@ -16,6 +17,7 @@ function radarToGlobalCoordinates(contactDistance,contactYaw,contactPitch,gpsX,g
     z = contactDistance * math.tan(globalPitch)
     return {x=x+gpsX, y=y+gpsY, z=z+gpsZ, age=100}
 end
+---@endsection
 
 ---takes the output of the standard function and converts it to a coordinate object
 ---@param radarToGlobalCoordinate table coordinates

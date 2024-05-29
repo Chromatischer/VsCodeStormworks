@@ -125,4 +125,6 @@ end
 ---@endsection
 
 --- constants
+---@section constants
 math.piHalf = math.pi / 2
+---@endsection

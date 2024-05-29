@@ -97,6 +97,9 @@ function onTick()
             else
                 if (track:getState() == 2 and track:getUpdateTime() > track:getMaxUpdateTime()) or (track:getState() == 1 and track:getUpdateTime() > track:getMaxCoastTime()) then
                     table.remove(tracks, index) -- deleting from array if coasted or if inactive and no more data is available
+                    if selectedTrack == index then -- if the selected track is deleted, deselect it
+                        selectedTrack = nil
+                    end
                 end
             end
             --#endregion
@@ -139,32 +142,71 @@ function onDraw()
     screen.setMapColorSnow()
     for index, track in ipairs(tracks) do
         if selectedTrack == nil then
-            if track:getState() == 0 or track:getState() == 1 then
-                trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
-                trackOnScreenPositions[index] = trackOnScreenPosition
-                --screen.setColor(0, 0, 255, 50)
-                --screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), math.floor(track:getSpeed()))
-                --if selectedTrack == nil then
+            trackOnScreenPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY()))
+            trackOnScreenPositions[index] = trackOnScreenPosition
+
+            --rectangle with 90 deg offset
+            --TODO: change the way its drawn! less tokens means better. Cutting features if necessary
+            tospX = trackOnScreenPosition:getX()
+            tospY = trackOnScreenPosition:getY()
+            rad90 = math.rad(90)
+            rad180 = math.rad(180)
+            tang = track:getAngle()
+            p1x = tospX + 3 * math.sin(tang + rad90)
+            p1y = tospY + 3 * math.cos(tang + rad90)
+            p2x = tospX + 3 * math.sin(tang - rad90)
+            p2y = tospY + 3 * math.cos(tang - rad90)
+            p4x = tospX + 3 * math.sin(tang + rad180)
+            p4y = tospY + 3 * math.cos(tang + rad180)
+            p3x = tospX + 3 * math.sin(tang)
+            p3y = tospY + 3 * math.cos(tang)
+            p5 = newCoordinate(tospX + track:getSpeed() * math.sin(tang), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(tang)) -- speed vector end
+            if track:getState() == 0 then
                 screen.setColor(255, 0, 0)
-                p1 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() + math.rad(90)))
-                p2 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() - math.rad(90)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle() - math.rad(90)))
-                p3 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle()), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()))
-                p4 = newCoordinate(trackOnScreenPosition:getX() + 3 * math.sin(track:getAngle() + math.rad(180)), trackOnScreenPosition:getY() + 3 * math.cos(track:getAngle()) + math.rad(180))
-                --screen.drawText(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), p1:getX() .. " " .. p1:getY())
                 if track:getHistoryLength() < 60 then
                     ---triangle for tracks with less than 60 history points
-                    screen.drawLine(p1:getX(), p1:getY(), p3:getX(), p3:getY())
-                    screen.drawLine(p3:getX(), p3:getY(), p2:getX(), p2:getY())
+                    screen.drawLine(p1x, p1y, p3x, p3y)
+                    screen.drawLine(p3x, p3y, p2x, p2y)
                 else
                     ---rectangle for tracks with more than 60 history points
-                    screen.drawLine(p1:getX(), p1:getY(), p3:getX(), p3:getY())
-                    screen.drawLine(p3:getX(), p3:getY(), p2:getX(), p2:getY())
-                    screen.drawLine(p2:getX(), p2:getY(), p4:getX(), p4:getY())
-                    screen.drawLine(p4:getX(), p4:getY(), p1:getX(), p1:getY())
+                    screen.drawLine(p1x, p1y, p3x, p3y)
+                    screen.drawLine(p3x, p3y, p2x, p2y)
+                    screen.drawLine(p2x, p2y, p4x, p4y)
+                    screen.drawLine(p4x, p4y, p1x, p1y)
                 end
                 ---line for speed vector
-                p5 = newCoordinate(trackOnScreenPosition:getX() + track:getSpeed() * math.sin(track:getAngle()), trackOnScreenPosition:getY() + track:getSpeed() * math.cos(track:getAngle()))
-                screen.drawLine(p3:getX(), p3:getY(), p5:getX(), p5:getY())
+                screen.drawLine(p3x, p3y, p5:getX(), p5:getY())
+            elseif track:getState() == 1 then
+                --cross shape for coasted tracks
+                --TODO: reduce number of tokens used
+                rad45 = math.rad(45)
+                rad135 = math.rad(135)
+                p6x = tospX + 3 * math.sin(tang + rad45)
+                p6y = tospY + 3 * math.cos(tang + rad45)
+                p7x = tospX + 3 * math.sin(tang - rad45)
+                p7y = tospY + 3 * math.cos(tang - rad45)
+                p8x = tospX + 3 * math.sin(tang + rad135)
+                p8y = tospY + 3 * math.cos(tang + rad135)
+                p9x = tospX + 3 * math.sin(tang - rad135)
+                p9y = tospY + 3 * math.cos(tang - rad135)
+                screen.drawLine(p6x, p6y, p8x, p8y) -- drawing the cross
+                screen.drawLine(p7x, p7y, p9x, p9y)
+                screen.drawLine(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), p5:getX(), p5:getY()) --adding speed vector with origin at the coasted track
+                onScreenPredicted = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getPrediction():getX(), track:getPrediction():getY()))
+                screen.drawLine(trackOnScreenPosition:getX(), trackOnScreenPosition:getY(), onScreenPredicted:getX(), onScreenPredicted:getY()) -- drawing line to the prediction
+
+                --#region drawing the history of the coasted track
+                local tempT = 0
+                local i = #track:getHistory() - 1
+                while tempT < 600 and i > 1 do -- 10 seconds worth of data or until the end of the history
+                    tempT = tempT + track:getUpdateTimes()[i] -- adding the update time of that step to the total time
+                    -- retrieving the current and next point to draw a line between
+                    currentDrawPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getHistory()[i]:getX(), track:getHistory()[i]:getY()))
+                    nextDrawPosition = newCoordinate(map.mapToScreen(gpsX, gpsY, mapZooms[mapZoom], Swidth, Sheight, track:getHistory()[i - 1]:getX(), track:getHistory()[i - 1]:getY()))
+                    screen.drawLine(currentDrawPosition:getX(), currentDrawPosition:getY(), nextDrawPosition:getX(), nextDrawPosition:getY())
+                    i = i - 1 -- because we are iterating backwards through the data
+                end
+                --#endregion
             end
         else
             if selectedTrack == index then
@@ -180,6 +222,7 @@ function onDraw()
         end
     end
     screen.setColor(255, 255, 255)
+    --TODO: draw the radar cone
     --screen.drawText(0, 0, "#" .. #tracks)
     screen.drawText(0, 6, string.format("%02d", math.abs(math.floor(radarRotation * 360))))
 end
