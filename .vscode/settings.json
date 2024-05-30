@@ -50,5 +50,6 @@
             "gitUrl": "https://github.com/nameouschangey/Stormworks_LifeBoatAPI_MC.git"
         }
     ],
-    "lifeboatapi.stormworks.user.authorName": "Chromatischer"
+    "lifeboatapi.stormworks.user.authorName": "Chromatischer",
+    "lifeboatapi.stormworks.minimizer.forceBoilerplate": false
 }
