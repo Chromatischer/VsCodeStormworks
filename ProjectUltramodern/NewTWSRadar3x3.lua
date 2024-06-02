@@ -41,119 +41,124 @@ require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
 require("Utils.TrackWhileScanUtils")
 
-
-internalRadarData = {}
-internalEMAFactor = 0.01
-
+intExpoFactor = 0.01
+inRadarData = {}
 tempRadarData = {}
-twsContacts = {}
+twsTracks = {}
 twsBoxSize = 100
 twsMaxUpdateTime = 300
 twsMaxCoastTime = twsMaxUpdateTime * 5
+twsActivationNumber = 2
+deltaRotation = 0
+lastRotation = 0
+lastDeltaRotation = 0
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    --inputs
-    gpsX = input.getNumber(17)
-    gpsY = input.getNumber(19)
-    gpsZ = input.getNumber(18)
-    compas = input.getNumber(20)
-    currentRadarRotation = input.getNumber(21)
+    gpsX = input.getNumber(20)
+    gpsY = input.getNumber(22)
+    gpsZ = input.getNumber(21)
+    compas = input.getNumber(23)
+    pitch = input.getNumber(24)
+    radarRotation = input.getNumber(25)
 
-    --NOTE: that everything that is iterated over needs to be iterated over back to front!
-    --TODO: testing of all the systems as well as the intermediate averaging and the tws itself
-    --NOTE: the tws should be working in theory so that should be alright!
+    for i = 0, 4 do
+        inRadDistance = input.getNumber(1 + i * 4) -- 1, 5, 9, 13, 17
+        inRadAzimuth = input.getNumber(2 + i * 4) -- 2, 6, 10, 14, 18
+        inRadElevation = input.getNumber(3 + i * 4) -- 3, 7, 11, 15, 19
+        inRadPosition = convertToCoordinateObj(radarToGlobalCoordinates(inRadDistance, inRadAzimuth, inRadElevation, gpsX, gpsY, gpsZ, compas, pitch))
 
-    for i = 0, 3 do -- calculating tempRadarData to use for the tws system
-        radarDistance = input.getNumber(i * 4)
-        radarAzimuth = input.getNumber(1 + i * 4) * 360
-        radarElevation = input.getNumber(2 + i * 4) * 360
-        radarTimeSinceDetected = input.getNumber(3 + i * 4)
-        isRadarContact = input.getBool(i * 4)
-
-        if isRadarContact and radarDistance > 90 then
-            radarRelativeCoordinate = newCoordinate(radarDistance * math.sin(math.rad(radarAzimuth)), radarDistance * math.cos(math.rad(radarAzimuth)), radarDistance * math.tan(math.rad(radarElevation)))
-            -- in theory: take the radar data and average it out as long as the TSD is not 0 if it is 0 then flush it into the tempRadarData
-            -- this is done using an EMA and applying it to the XY and Z component of the coordinate
-            if radarTimeSinceDetected ~= 0 then
-                lastCoordinate = internalRadarData[i]
-                -- use EMA to average over the tempRadarData when time since detected is 0
-                --todo test if lineBreak works xD
-                internalRadarData[i] = lastCoordinate and newCoordinate(exponentialMovingAverage(radarRelativeCoordinate:getX(), lastCoordinate:getX(), internalEMAFactor),
-                exponentialMovingAverage(radarRelativeCoordinate:getY(), lastCoordinate:getY(), internalEMAFactor),
-                exponentialMovingAverage(radarRelativeCoordinate:getZ(), lastCoordinate:getZ(), internalEMAFactor))
-                or radarRelativeCoordinate
-            else
-                tempRadarData[i] = internalRadarData[i] --flushing to the array to use in my pre-made script
-            end
+        -- if there is a contact detected then if the time since detection is 0 then 
+        if input.getBool(i) then
+            table.insert(inRadarData, inRadPosition)
         end
     end
+    deltaRotation = radarRotation - lastRotation
+    lastRotation = radarRotation
+    --sign(x) will return -1 if x is negative, 0 if x is 0, and 1 if x is positive
+    --that means that if the sign of the delta rotation is the same as the sign of the last delta rotation then we can assume that the radar is still rotating
+    --if the sign of the delta rotation is different from the sign of the last delta rotation then we can assume that the radar has chaned direction
+    --and we can flush to the tempRadarData and start processing the data
+    --or if the rotation is 180 or 360 degrees if it is contiously rotating
+    if (sign(deltaRotation) - sign(lastDeltaRotation) == 0) or (radarRotation % 180 == 0 and radarRotation ~= 0) then
+        tempRadarData = {} --resetting the tempRadarData
+        for i = 1, #inRadPosition do
+            table.insert(tempRadarData, inRadPosition[i]) --moving all the data from the inRadarData to the tempRadarData
+        end
+        inRadarData = {} --resetting the inRadarData
+    end
+    lastDeltaRotation = deltaRotation --setting the last delta rotation to the current delta rotation
 
-    for index = #twsContacts, 1, -1 do
-        twsContact = twsContacts[index]
-        if twsContact then
-            twsContact:addUpdateTime()
-            for tempRadarIndex = #tempRadarData, 1, -1 do --Match every track to every temp contact check for box and then add to track and remove from temp storage
-                tempRadarContact = tempRadarData[tempRadarIndex]
-                twsLatestPosition = twsContact:getLatestHistoryPosition()
-                if tempRadarContact:get3DDistanceTo(twsLatestPosition) < twsContact:getBoxSize() then
-                    twsContact:addCoordinate(tempRadarContact)
-                    table.remove(tempRadarData, tempRadarIndex)
-                end
-            end
+    --creating the empty hungarian matrix to fill afterwards with the distances between the tempRadarData and the twsTracks
+    hungarianMatrix = {}
+    for i = 1, #tempRadarData + 1 do
+        hungarianMatrix[i] = vec(#twsTracks + 1, 0)
+    end
 
-            --if it is coasted use coast time if it is active or inactive then use update time
-            if twsContact:getState() == 0 then
-                if twsContact:getUpdateTime() > twsMaxUpdateTime then
-                    twsContact:coast() --first coast
-                end
-            --Ok so in theory: only state 1 and 2 can get here! 1 is coasted so its checked against maxCoastTime 2 is inactive so its checked against maxUpdateTime!
-            elseif (twsContact:getState() == 1 and twsContact:getUpdateTime() > twsMaxCoastTime) or (twsContact:getState() == 2  and twsContact:getUpdateTime() > twsMaxUpdateTime) then --should work :D
-                    table.remove(twsContacts, index) --then delete
-            end
-
-            twsContact:predict()
+    --filling the hungarian matrix with the distances between the tempRadarData and the twsTracks
+    for tempDex, tempCoordinate in pairs(tempRadarData) do
+        for trackDex, twsCoordinate in pairs(twsTracks) do
+            hungarianMatrix[trackDex + 1][tempDex + 1] = math.abs(tempCoordinate:get3DDistanceTo(twsCoordinate))
         end
     end
+    bestDistances = hungarianAlgorithm(hungarianMatrix)
 
-    --add the new data if it is still left in the temp storage and deleting afterwards
-    for tempRadarIndex = #tempRadarData, 1, -1 do
-        tempContact = tempRadarData[tempRadarIndex]
-        table.insert(twsContacts, newTrack(tempContact, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, 3))
-        table.remove(tempRadarData, tempRadarIndex)
+    --#region update
+    --updating the tracks and deleting the corresponding temp data
+    for track, temp in pairs(bestDistances) do
+        if hungarianMatrix[track][temp] < twsBoxSize then --if the distance to the coordinate is smaller then the box size
+            tracks[track]:addCoordinate(tempRadarData[temp]) --adding the temp coordinate to the corresponding track
+            tempRadarData[temp] = nil
+        end
     end
+    --#endregion
+
+    for i = #twsTracks, 1, -1 do
+        track = twsTracks[i]
+        track:addUpdateTime()
+        --#region delete
+        if track:getState() == 1 then
+            if track:getUpdateTime() > twsMaxCoastTime then
+                track:coast()
+            end
+        else
+            if track:getUpdateTime() > twsMaxUpdateTime then
+                table.remove(twsTracks, i)
+            end
+        end
+        --#endregion
+        track:predict()
+    end
+
+    --#region adding new tracks
+    for i = #tempRadarData, 1, -1 do
+        temp = tempRadarData[i]
+        if temp ~= nil then
+            table.insert(twsTracks, newTrack(temp, twsBoxSize, twsMaxUpdateTime, twsMaxCoastTime, twsActivationNumber))
+        end
+        table.remove(tempRadarData, i)
+    end
+    --#endregion
 end
 
 function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
 
-    screen.setColor(100, 92, 88) -- background gray (light)
-    screen.drawRectF(0, 0, Swidth, Sheight)
-    screen.setColor(50, 46, 44) -- text more gray! (dark)
-    --tetradic colors
-    screen.setColor(248, 104, 031) -- orange
-    screen.setColor(066, 248, 031) -- green
-    screen.setColor(031, 175, 248) -- blue
-    screen.setColor(213, 031, 248) -- purple
+    --conversion to screen-space taking rotation into account
 
-    --maybe use
-    --(248, 212, 31) --yellow
-    --(175, 248, 31) --green (light)
-    --(31, 248, 213) --blue (light)
-
-    --TODO: convert world space into screen space
-     -- take the rotation into account!
-
-    --TODO: draw contacts to screen
-
-    --TODO: draw trails to screen (only like 3-4 or something)
-
-    --TODO: draw current radar rotation to screen
-
-    --TODO: draw simple UI (scale and not much more!)
-
+    for _, track in ipairs(twsTracks) do
+        radPas = math.rad(compas)
+        relX = gpsX - track:getX()
+        relY = gpsY - track:getY()
+        relZ = gpsZ - track:getZ()
+        tempX = relX * Swidth --convert to screen space
+        tempY = relY * Sheight
+        --convert to on screen coordinate taking the orientation of the ship into account
+        onScreenX = tempX * math.cos(radPas) - tempY * math.sin(radPas)
+        onScreenY = tempY * math.cos(radPas) - tempX * math.sin(radPas)
+    end
 end
 
 function exponentialMovingAverage(a, b, f)
