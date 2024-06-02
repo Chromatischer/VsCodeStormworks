@@ -40,8 +40,10 @@ require("Utils.Utils")
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
 require("Utils.TrackWhileScanUtils")
+require("Utils.HungarianAlgorithm")
 
-intExpoFactor = 0.01
+globalScreenScale = 3
+globalScreenScales = {100, 250, 500, 750, 1000, 1250, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000}
 inRadarData = {}
 tempRadarData = {}
 twsTracks = {}
@@ -52,6 +54,7 @@ twsActivationNumber = 2
 deltaRotation = 0
 lastRotation = 0
 lastDeltaRotation = 0
+minRadDistance = 90
 
 ticks = 0
 function onTick()
@@ -64,18 +67,23 @@ function onTick()
     radarRotation = input.getNumber(25)
 
     for i = 0, 4 do
-        inRadDistance = input.getNumber(1 + i * 4) -- 1, 5, 9, 13, 17
-        inRadAzimuth = input.getNumber(2 + i * 4) -- 2, 6, 10, 14, 18
-        inRadElevation = input.getNumber(3 + i * 4) -- 3, 7, 11, 15, 19
-        inRadPosition = convertToCoordinateObj(radarToGlobalCoordinates(inRadDistance, inRadAzimuth, inRadElevation, gpsX, gpsY, gpsZ, compas, pitch))
-
-        -- if there is a contact detected then if the time since detection is 0 then 
         if input.getBool(i) then
-            table.insert(inRadarData, inRadPosition)
+            inRadDistance = input.getNumber(1 + i * 4) -- 1, 5, 9, 13, 17
+            inRadAzimuth = input.getNumber(2 + i * 4) -- 2, 6, 10, 14, 18
+            inRadElevation = input.getNumber(3 + i * 4) -- 3, 7, 11, 15, 19
+            if inRadDistance > minRadDistance then --To not detect own subgrids
+                inRadPosition = convertToCoordinateObj(radarToGlobalCoordinates(inRadDistance, inRadAzimuth, inRadElevation, gpsX, gpsY, gpsZ, compas, pitch))
+                table.insert(inRadarData, inRadPosition) --Inserting only if there is a detection on the channel and the distance requirement is met
+            end
         end
     end
+
+    --#region Radar Rotation Deltas
     deltaRotation = radarRotation - lastRotation
     lastRotation = radarRotation
+    --#endregion
+
+    --#region pushing input data to the tws system
     --sign(x) will return -1 if x is negative, 0 if x is 0, and 1 if x is positive
     --that means that if the sign of the delta rotation is the same as the sign of the last delta rotation then we can assume that the radar is still rotating
     --if the sign of the delta rotation is different from the sign of the last delta rotation then we can assume that the radar has chaned direction
@@ -89,22 +97,28 @@ function onTick()
         inRadarData = {} --resetting the inRadarData
     end
     lastDeltaRotation = deltaRotation --setting the last delta rotation to the current delta rotation
+    --#endregion
 
+    --#region Using the hungarian algorithm select the closest contact to each track
     --creating the empty hungarian matrix to fill afterwards with the distances between the tempRadarData and the twsTracks
     hungarianMatrix = {}
     for i = 1, #tempRadarData + 1 do
         hungarianMatrix[i] = vec(#twsTracks + 1, 0)
     end
 
-    --filling the hungarian matrix with the distances between the tempRadarData and the twsTracks
+    --TODO: There can be problems with this because the algorithm only works if there are more rows then cols (I think this may not be true!)
+    --TODO: Therefore creating dummy rows or cols will fix this issue!
+
+    --Filling the hungarian matrix with the distances between the tempRadarData and the twsTracks
     for tempDex, tempCoordinate in pairs(tempRadarData) do
         for trackDex, twsCoordinate in pairs(twsTracks) do
             hungarianMatrix[trackDex + 1][tempDex + 1] = math.abs(tempCoordinate:get3DDistanceTo(twsCoordinate))
         end
     end
     bestDistances = hungarianAlgorithm(hungarianMatrix)
+    --#endregion
 
-    --#region update
+    --#region Update tracks using the hungarian matrix
     --updating the tracks and deleting the corresponding temp data
     for track, temp in pairs(bestDistances) do
         if hungarianMatrix[track][temp] < twsBoxSize then --if the distance to the coordinate is smaller then the box size
@@ -117,7 +131,7 @@ function onTick()
     for i = #twsTracks, 1, -1 do
         track = twsTracks[i]
         track:addUpdateTime()
-        --#region delete
+        --#region Delete and coast tracks that have not received updates
         if track:getState() == 1 then
             if track:getUpdateTime() > twsMaxCoastTime then
                 track:coast()
@@ -131,7 +145,7 @@ function onTick()
         track:predict()
     end
 
-    --#region adding new tracks
+    --#region Adding new tracks using the left over tempRadarData
     for i = #tempRadarData, 1, -1 do
         temp = tempRadarData[i]
         if temp ~= nil then
@@ -146,21 +160,44 @@ function onDraw()
     Swidth = screen.getWidth()
     Sheight = screen.getHeight()
 
-    --conversion to screen-space taking rotation into account
-
     for _, track in ipairs(twsTracks) do
-        radPas = math.rad(compas)
-        relX = gpsX - track:getX()
-        relY = gpsY - track:getY()
-        relZ = gpsZ - track:getZ()
-        tempX = relX * Swidth --convert to screen space
-        tempY = relY * Sheight
-        --convert to on screen coordinate taking the orientation of the ship into account
-        onScreenX = tempX * math.cos(radPas) - tempY * math.sin(radPas)
-        onScreenY = tempY * math.cos(radPas) - tempX * math.sin(radPas)
+        onScreenX, onScreenY = toOnScreenPosition(track:getX(), track:getY())
+        --switch colors based on track state
+        if track:getState() == 0 then
+            screen.setColor(255, 0, 0)
+        elseif track:getState() == 1 then
+            screen.setColor(0, 255, 0)
+        end
+        screen.drawRectF(onScreenX, onScreenY, 2, 2)
+
+        n = 3 -- starting with length of 3
+        for i = #track:getHistory(), #track:getHistory() - 3, -1 do
+            currHistoryPos = track:getHistory()[i]
+            historyX, historyY = toOnScreenPosition(currHistoryPos:getX(), currHistoryPos:getY())
+            firstX, firstY = historyX + n * math.sin(math.rad(compas)), historyY - n * math.cos(math.rad(compas))
+            secondX, secondY = historyX + n * math.sin(math.rad(180 - compas)), historyY - n * math.cos(math.rad(180 - compas))
+            screen.drawLine(firstX, firstY, secondX, secondY)
+            n = n - 1
+        end
+    end
+
+    for _, position in ipairs(tempRadarData) do --drawing the tempRadarData too because for debugging purposes it could be useful
+        onScreenX, onScreenY = toOnScreenPosition(position:getX(), position:getY())
+        screen.setColor(100, 100, 100, 100)
+        screen.drawText(onScreenX, onScreenY, _) --drawing the number instead of a rect because!
     end
 end
 
-function exponentialMovingAverage(a, b, f)
-    return a * f + b * (1 - f)
+---converts a global coordinate into screen space and rotates it so that the compas angle is up on the map
+---@param globalX number the global X coordinate
+---@param globalY number the global Y coordinate
+---@return number X the on Screen X position of the global coordinate
+---@return number Y the on Screen Y position of the global coordinate
+function toOnScreenPosition(globalX, globalY)
+    local radAng = math.rad(compas)
+    local screenSpaceX = gpsX - globalX / globalScreenScales[globalScreenScale] --converting from global to local e.g: 500m if the scale is 500 then the screenSpaceX will be 1 if the scale is 1000 then its 0.5
+    local screenSpaceY = gpsY - globalY / globalScreenScales[globalScreenScale]
+    local withAngleX = screenSpaceX * math.cos(radAng) - screenSpaceY * math.sin(radAng)
+    local withAngleY = screenSpaceY * math.cos(radAng) + screenSpaceX * math.sin(radAng)
+    return withAngleX, withAngleY
 end

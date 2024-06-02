@@ -25,11 +25,6 @@ function hungarianAlgorithm(a)
             local j1
             for j = 2, m do
                 if used[j] ~= true then
-                    o = a
-                    o = i0
-                    o = j
-                    o = u
-                    o = v
                     cur = a[i0][j] - u[i0] - v[j]
 
                     if cur < minv[j] then

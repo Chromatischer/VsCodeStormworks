@@ -124,7 +124,18 @@ function onMapDistance(scale, screenWidth, screenHeight, distance)
 end
 ---@endsection
 
---- constants
+---constants
 ---@section constants
 math.piHalf = math.pi / 2
+---@endsection
+
+---applies the Exponentail Moving Average on the value a and b where
+---@param a number is the new value
+---@param b number is the old value
+---@param f number is the factor of how much impact the new value has on the old one
+---@return number number the new EMA
+---@section exponentialMovingAverage
+function exponentialMovingAverage(a, b, f)
+    return a * f + b * (1 - f)
+end
 ---@endsection
