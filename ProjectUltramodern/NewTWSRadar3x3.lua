@@ -39,6 +39,7 @@ end
 require("Utils.Utils")
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
+require("Utils.Coordinate.radarToGlobalCoordinates")
 require("Utils.TrackWhileScanUtils")
 require("Utils.HungarianAlgorithm")
 
@@ -59,18 +60,18 @@ minRadDistance = 90
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    gpsX = input.getNumber(20)
-    gpsY = input.getNumber(22)
-    gpsZ = input.getNumber(21)
-    compas = input.getNumber(23)
-    pitch = input.getNumber(24)
-    radarRotation = input.getNumber(25)
+    gpsX = input.getNumber(13)
+    gpsY = input.getNumber(15)
+    gpsZ = input.getNumber(14)
+    compas = input.getNumber(16)
+    pitch = input.getNumber(17)
+    radarRotation = input.getNumber(18)
 
-    for i = 0, 4 do
-        if input.getBool(i) then
-            inRadDistance = input.getNumber(1 + i * 4) -- 1, 5, 9, 13, 17
-            inRadAzimuth = input.getNumber(2 + i * 4) -- 2, 6, 10, 14, 18
-            inRadElevation = input.getNumber(3 + i * 4) -- 3, 7, 11, 15, 19
+    for i = 0, 3 do
+        if input.getBool(i + 1) then
+            inRadDistance = input.getNumber(1 + i * 3)  -- 1, 4, 7, 10
+            inRadAzimuth = input.getNumber(2 + i * 3)   -- 2, 5, 8, 11
+            inRadElevation = input.getNumber(3 + i * 3) -- 3, 6, 9, 12
             if inRadDistance > minRadDistance then --To not detect own subgrids
                 inRadPosition = convertToCoordinateObj(radarToGlobalCoordinates(inRadDistance, inRadAzimuth, inRadElevation, gpsX, gpsY, gpsZ, compas, pitch))
                 table.insert(inRadarData, inRadPosition) --Inserting only if there is a detection on the channel and the distance requirement is met
@@ -91,19 +92,21 @@ function onTick()
     --or if the rotation is 180 or 360 degrees if it is contiously rotating
     if (sign(deltaRotation) - sign(lastDeltaRotation) == 0) or (radarRotation % 180 == 0 and radarRotation ~= 0) then
         tempRadarData = {} --resetting the tempRadarData
-        for i = 1, #inRadPosition do
-            table.insert(tempRadarData, inRadPosition[i]) --moving all the data from the inRadarData to the tempRadarData
+        for i = 1, #inRadarData do
+            table.insert(tempRadarData, inRadarData[i]) --moving all the data from the inRadarData to the tempRadarData
         end
         inRadarData = {} --resetting the inRadarData
     end
     lastDeltaRotation = deltaRotation --setting the last delta rotation to the current delta rotation
     --#endregion
 
-    --#region Using the hungarian algorithm select the closest contact to each track
+
+    --IMPORTANT: tempData is rows and twsTracks are columns
+    
     --creating the empty hungarian matrix to fill afterwards with the distances between the tempRadarData and the twsTracks
     hungarianMatrix = {}
-    for i = 1, #tempRadarData + 1 do
-        hungarianMatrix[i] = vec(#twsTracks + 1, 0)
+    for i = 1, #tempRadarData do
+        hungarianMatrix[i] = vec(#twsTracks) --creates a table with #tempRadarData rows and #twsTracks columns
     end
 
     --TODO: There can be problems with this because the algorithm only works if there are more rows then cols (I think this may not be true!)
@@ -115,18 +118,22 @@ function onTick()
             hungarianMatrix[trackDex + 1][tempDex + 1] = math.abs(tempCoordinate:get3DDistanceTo(twsCoordinate))
         end
     end
-    bestDistances = hungarianAlgorithm(hungarianMatrix)
-    --#endregion
 
-    --#region Update tracks using the hungarian matrix
-    --updating the tracks and deleting the corresponding temp data
-    for track, temp in pairs(bestDistances) do
-        if hungarianMatrix[track][temp] < twsBoxSize then --if the distance to the coordinate is smaller then the box size
-            tracks[track]:addCoordinate(tempRadarData[temp]) --adding the temp coordinate to the corresponding track
-            tempRadarData[temp] = nil
+    if #hungarianMatrix > 0 and #hungarianMatrix[1] > 0 then
+        normalizeTable(hungarianMatrix) --normalizing because there can either be more tracks or contacts
+        bestDistances = hungarianAlgorithm(hungarianMatrix)
+
+        --#region Update tracks using the hungarian matrix
+        --updating the tracks and deleting the corresponding temp data
+        for row, _ in pairs(bestDistances) do
+            if hungarianMatrix[row][bestDistances[row]] ~= 9e2 then
+                twsTracks[bestDistances[row]]:addCoordinate(tempRadarData[row]) --idk maybe?
+            end
+            --print("row: " .. row + 1 .. " col: " .. hungarianRes[row + 1] .. " val: " .. (referenceTable[row + 1][hungarianRes[row + 1]] == 9e2 and "H" or referenceTable[row + 1][hungarianRes[row + 1]]))
         end
+        --#endregion
     end
-    --#endregion
+    
 
     for i = #twsTracks, 1, -1 do
         track = twsTracks[i]
@@ -161,7 +168,7 @@ function onDraw()
     Sheight = screen.getHeight()
 
     for _, track in ipairs(twsTracks) do
-        onScreenX, onScreenY = toOnScreenPosition(track:getX(), track:getY())
+        onScreenX, onScreenY = toOnScreenPosition(track:getLatestHistoryPosition():getX(), track:getLatestHistoryPosition():getY())
         --switch colors based on track state
         if track:getState() == 0 then
             screen.setColor(255, 0, 0)
@@ -173,12 +180,20 @@ function onDraw()
         n = 3 -- starting with length of 3
         for i = #track:getHistory(), #track:getHistory() - 3, -1 do
             currHistoryPos = track:getHistory()[i]
+            if not currHistoryPos then
+                goto continue
+            end
             historyX, historyY = toOnScreenPosition(currHistoryPos:getX(), currHistoryPos:getY())
             firstX, firstY = historyX + n * math.sin(math.rad(compas)), historyY - n * math.cos(math.rad(compas))
             secondX, secondY = historyX + n * math.sin(math.rad(180 - compas)), historyY - n * math.cos(math.rad(180 - compas))
             screen.drawLine(firstX, firstY, secondX, secondY)
+            ::continue::
             n = n - 1
         end
+
+        --Draw UI
+        screen.drawText(1, 1, globalScreenScales[globalScreenScale])
+        screen.drawText(1, 5, #twsTracks .. " " .. #tempRadarData .. " " .. (radarRotation * 360))
     end
 
     for _, position in ipairs(tempRadarData) do --drawing the tempRadarData too because for debugging purposes it could be useful

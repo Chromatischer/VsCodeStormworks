@@ -66,6 +66,8 @@ function newCoordinate(x, y, z)
             if not self.is2D and not coordinate:getIs2D() then
                 ret = math.sqrt((self.x - coordinate:getX()) ^ 2 + (self.y - coordinate:getY()) ^ 2 + (self.z - coordinate:getZ()) ^ 2)
             end
+            
+            ---@diagnostic disable-next-line: return-type-mismatch
             return ret
         end,
         ---@endsection

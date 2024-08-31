@@ -19,6 +19,7 @@ end
 ---@return number number the clamped value of x within min and max
 ---@diagnostic disable-next-line: duplicate-set-field
 ---@section math.clamp addon
+---@diagnostic disable-next-line: duplicate-set-field
 function math.clamp(x,min,max)
     return math.min(math.max(x, min), max)
 end
@@ -137,5 +138,31 @@ math.piHalf = math.pi / 2
 ---@section exponentialMovingAverage
 function exponentialMovingAverage(a, b, f)
     return a * f + b * (1 - f)
+end
+---@endsection
+
+---returns the sign of the number 1 if x > 0, -1 if x < 0 and 0 if x = 0
+---@param x number the number to get the sign of
+---@return number number the sign of the number x
+---@section sign
+function sign(x)
+    if x > 0 then
+        return 1
+    elseif x < 0 then
+        return -1
+    else
+        return 0
+    end
+end
+---@endsection
+
+---@section math.round
+---@diagnostic disable-next-line: duplicate-set-field
+function math.round(number)
+    if number % 1 > 0.4 then
+        return math.ceil(number)
+    else
+        return math.floor(number)
+    end
 end
 ---@endsection
