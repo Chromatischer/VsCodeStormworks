@@ -54,6 +54,27 @@ require("Utils.Utils")
 -- 3: Touch
 --#endregion
 
+--#region CH Layout
+-- CH1: Global Scale
+-- CH2: GPS X
+-- CH3: GPS Y
+-- CH4: GPS Z
+-- CH5: Vessel Angle
+-- CH6: Screen Select I
+-- CH7: Screen Select II
+-- CH8: Touch X I
+-- CH9: Touch Y I
+-- CH10: Touch X II
+-- CH11: Touch Y II
+
+-- CHB1: Global Darkmode
+-- CHB2: Touch I
+-- CHB3: Touch II
+--#endregion
+
+
+
+
 beacons = {}
 prevBeacon = {x = 0, y = 0}
 originGuess = nil
@@ -64,61 +85,103 @@ TrilaterationSteps = 500
 TrilaterationThreshold = 5
 TrilaterationRate = 0.01
 BeaconMinSeperation = 20
+screenCenterX = 0
+screenCenterY = 0
+selfID = 0
+SelfIsSelected = false --whether or not this module is selected by the CH Main Controler
+isUsingCHZoom = true
+lastGlobalScale = 0
+
+zoom = 5
+zooms = {0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    gpsX = input.getNumber(1)
-    gpsY = input.getNumber(2)
-    gpsZ = input.getNumber(3)
-    touchX = input.getNumber(4)
-    touchY = input.getNumber(5)
-    beaconDistance = input.getNumber(6)
+    selfID = property.getNumber("SelfID")
 
-    tlActive = input.getBool(1)
-    tlPulse = input.getBool(2)
-    isDepressed = input.getBool(3)
+    CHGlobalScale = input.getNumber(1)
+    gpsX = input.getNumber(2)
+    gpsY = input.getNumber(3)
+    gpsZ = input.getNumber(4)
+    vesselAngle = input.getNumber(5)
+    CHSel1 = input.getNumber(6)
+    CHSel2 = input.getNumber(7)
+    touchX = selfID == CHSel1 and input.getNumber(8) or input.getNumber(10)
+    touchY = selfID == CHSel1 and input.getNumber(9) or input.getNumber(11)
+    beaconDistance = input.getNumber(12)
 
-    if tlActive then
-        if distance(prevBeacon, {x = gpsX, y = gpsY}) > BeaconMinSeperation and tlPulse and beaconDistance > 150 then --add a new beacon if the distance is greater than 100 and a new distance is available
-            table.insert(beacons, {x = gpsX, y = gpsY, distance = beaconDistance})
+    CHDarkmode = input.getBool(1)
+    isDepressed = selfID == CHSel1 and input.getBool(2) or input.getBool(3)
+    tlActive = input.getBool(4)
+    tlPulse = input.getBool(5)
 
-            if #beacons > MaxBeaconCount then --remove the oldest beacon if the list is too long to keep the complexity down
-                table.remove(beacons, 1)
-            end
+    SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
 
-            prevBeacon = {x = gpsX, y = gpsY}
+    --#region Map Zoom
+    if isUsingCHZoom then
+        zoom = CHGlobalScale
+    end
+    if CHGlobalScale ~= lastGlobalScale then
+        isUsingCHZoom = true
+    end
+    lastGlobalScale = CHGlobalScale
+    --#endregion
 
-            if #beacons > 3 then --trilateration only works with 3 or more beacons
-                originGuess = (isNan(mse) or isInf(mse) or not originGuess) and averageCoordinate(beacons) or originGuess
-                originGuess, mse, numIterations = gradientDescendLoop(TrilaterationRate, TrilaterationThreshold, TrilaterationSteps, beacons, originGuess)
+    --#region Beacon Trilateration
+    if SelfIsSelected then
+        if tlActive then
+            if distance(prevBeacon, {x = gpsX, y = gpsY}) > BeaconMinSeperation and tlPulse and beaconDistance > 150 then --add a new beacon if the distance is greater than 100 and a new distance is available
+                table.insert(beacons, {x = gpsX, y = gpsY, distance = beaconDistance})
+
+                if #beacons > MaxBeaconCount then --remove the oldest beacon if the list is too long to keep the complexity down
+                    table.remove(beacons, 1)
+                end
+
+                prevBeacon = {x = gpsX, y = gpsY}
+
+                if #beacons > 3 then --trilateration only works with 3 or more beacons
+                    originGuess = (isNan(mse) or isInf(mse) or not originGuess) and averageCoordinate(beacons) or originGuess
+                    originGuess, mse, numIterations = gradientDescendLoop(TrilaterationRate, TrilaterationThreshold, TrilaterationSteps, beacons, originGuess)
+                end
             end
         end
     end
+    --#endregion
+
+    --#region Setting values on Boot
+    if ticks < 10 then
+        screenCenterX, screenCenterY = gpsX, gpsY
+        lastGlobalScale = CHGlobalScale
+    end
+    --#endregion
 end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    screen.drawMap(gpsX, gpsY, 5)
-    screen.setColor(0, 255, 0)
-    for _, beacon in ipairs(beacons) do
-        px, py = map.mapToScreen(gpsX, gpsY, 5,  Swidth, Sheight, beacon.x, beacon.y)
-        screen.drawRectF(px, py, 2, 2)
-    end
 
-    screen.setColor(255, 0, 0)
-    if originGuess then
-        px, py = map.mapToScreen(gpsX, gpsY, 5,  Swidth, Sheight, originGuess.x, originGuess.y)
-        screen.drawCircle(px, py, 5)
-    end
+    if SelfIsSelected then
+        screen.drawMap(gpsX, gpsY, 5)
+        screen.setColor(0, 255, 0)
+        for _, beacon in ipairs(beacons) do
+            px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, beacon.x, beacon.y)
+            screen.drawRectF(px, py, 2, 2)
+        end
 
-    screen.setColor(255, 255, 255)
-    screen.drawText(2, 2, "MSE: " .. string.format("%.2f", mse))
-    screen.drawText(2, 9, "N: " .. numIterations)
-    screen.drawText(2, 16, "B: " .. #beacons)
+        screen.setColor(255, 0, 0)
+        if originGuess then
+            px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
+            screen.drawCircle(px, py, (mse / 2000))
+        end
 
-    if originGuess then
-        screen.drawText(2, 23, "X: ", originGuess.x)
-        screen.drawText(2, 30, "Y: ", originGuess.y)
+        screen.setColor(255, 255, 255)
+        --screen.drawText(2, 2, "MSE: " .. string.format("%.2f", mse))
+        --screen.drawText(2, 9, "N: " .. numIterations)
+        --screen.drawText(2, 16, "B: " .. #beacons)
+
+        if originGuess then
+            screen.drawText(2, 2, "X: " .. originGuess.x)
+            screen.drawText(2, 9, "Y: " .. originGuess.y)
+        end
     end
 end
