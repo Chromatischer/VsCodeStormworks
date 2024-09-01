@@ -4,7 +4,7 @@
 ---@param circle2 table<x, y, r> The second circle to find the intersection points of (Table with x, y and radius r)
 ---@return table<x1, y1, x2, y2> ?table The intersection points of the two circles
 ---@return nil ?nil If the circles do not intersect
----@section CircleIntersections
+---@section circleIntersection
 function circleIntersection(circle1, circle2)
     x1 = circle1.x
     y1 = circle1.y
@@ -39,7 +39,7 @@ function circleIntersection(circle1, circle2)
 
     return {ix1, iy1, ix2, iy2}
 end
----@endsection CircleIntersections
+---@endsection
 
 ---Idea for finding the best intersection point:
 ---1. Find the intersection points of all circles
@@ -48,15 +48,19 @@ end
 ---4. Return the intersection point with the smallest sum of distances to all other intersection points
 ---@param intersections table<table<x, y>> The points to find the best intersection point from
 ---@return table<x, y> coordinate best intersection point
+---@return number distance Best distance to all other intersection points
+---@return number number Number of calculations
 ---@section findBestIntersectionPoint
 function findBestIntersectionPoint(intersections)
     bestIntersection = {}
     bestDistance = math.huge
+    number = 0
     for i = 1, #intersections do
         sum = 0
         for j = 1, #intersections do
             if i ~= j then
-                sum = sum + math.sqrt((intersections[i][1] - intersections[j][1]) ^ 2 + (intersections[i][2] - intersections[j][2]) ^ 2)
+                sum = sum + math.sqrt((intersections[i].x - intersections[j].x) ^ 2 + (intersections[i].y - intersections[j].y) ^ 2)
+                number = number + 1
             end
         end
         if sum < bestDistance then
@@ -64,11 +68,11 @@ function findBestIntersectionPoint(intersections)
             bestIntersection = intersections[i]
         end
     end
-    return bestIntersection
+    return bestIntersection, bestDistance, number
 end
----@endsection findBestIntersectionPoint
+---@endsection
 
----@section Testing of the functions
+---@section Testing
 circles = {{x = 1, y = 1, r = 1}, {x = 0.1, y = 2.4, r = 1}, {x = 1.9, y = 2.5, r = 1}, {x = 2.1, y = 0.7, r = 1.7}, } -- 4 circles, which almost intersect at (1, 2)
 intersections = {}
 for i = 1, #circles do

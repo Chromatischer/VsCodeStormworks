@@ -53,7 +53,15 @@ end
 
 pulsePoints = {} -- table structure: {x, y, z, distance}
 wasActive = false
-intersections = {} -- table structure: {i1, i2, x, y}
+intersections = {} -- table structure: {x, y}
+bestIntersection = {x = 0, y = 0} -- coordinate (x, y)
+lastRecordPosition = {x = 0, y = 0}
+bestIntersectionArray = {}
+bestDistance = 0
+numCalculations = 0
+intersectionNum = 25
+pulseX = 0
+pulseY = 0
 
 -- Idea1: Pick at random two pulsePoints and calculate the intersection of their circles, save the intersection points in intersections table and go from there
 --Pro: Less resource intensive then Idea3, Con: Uses older data with less accuracy, More difficult to implement
@@ -81,15 +89,68 @@ function onTick()
     pulse = input.getBool(2)
     isDepressed = input.getBool(3)
 
+    pInt = property.getNumber("Number of Calculations for Intersection")
+    pInt = math.sqrt(pInt) - pInt
+    intersectionNum = pInt ~= 0 and pInt or 25
+
     if isActive and not wasActive then
         pulsePoints = {}
     end
     wasActive = isActive
 
-    if isActive and pulse then
-        table.insert(pulsePoints, {gpsX, gpsY, gpsZ, tDistanceAnalog})
+    if pulse then
+        pulseX = gpsX
+        pulseY = gpsY
+    end
+
+    if isActive and pulse and (tDistanceAnalog > 200) then --only record a new pulsePoint if the active input is true and the pulse input is true and the distance is greater than 300 because 250 is the minimum resolution of the trnasponder
+        if math.abs(math.sqrt((lastRecordPosition.x - gpsX) ^ 2 + (lastRecordPosition.y - gpsY) ^ 2)) > 10 then --only record a new pulsePoint if the distance between the last recorded position and the new position is greater than 10 meters to avoid recording the same position multiple times
+            table.insert(pulsePoints, {x = pulseX, y = pulseY, r = tDistanceAnalog})
+            lastRecordPosition = {x = gpsX, y = gpsY}
+            if #pulsePoints > 1 then --only calculate the intersection points if there are at least two pulsePoints
+                intersectionPoints = circleIntersection(pulsePoints[#pulsePoints], pulsePoints[#pulsePoints - 1])
+                if intersectionPoints then
+                    table.insert(intersections, {x = intersectionPoints[1], y = intersectionPoints[2]})
+                    table.insert(intersections, {x = intersectionPoints[3], y = intersectionPoints[4]})
+                end
+                --only calculate the best intersection point for the latest 50 pulsePoints because of the resource intensity
+                if #intersections > 0 then
+                    table.insert(bestIntersectionArray, intersections[#intersections])
+                    if # bestIntersectionArray > intersectionNum then
+                        table.remove(bestIntersectionArray, 1)
+                    end
+                    bestIntersection, bestDistance, numCalculations = findBestIntersectionPoint(bestIntersectionArray)
+                end
+            end
+        end
     end
 end
 
 function onDraw()
+    Swidth, Sheight = screen.getWidth(), screen.getHeight()
+    screen.setColor(255, 255, 255)
+    --screen.drawText(3, 1, "#P" .. #pulsePoints)
+    --screen.drawText(3, 8, "BIP" .. math.floor(bestIntersection.x) .. "|" .. math.floor(bestIntersection.y))
+    --screen.drawText(3, 15, "#I" .. #intersections)
+    screen.drawText(3, 1, "D" .. math.floor(bestDistance))
+    --screen.drawText(3, 29, "C" .. numCalculations)
+    screen.drawMap(bestIntersection.x, bestIntersection.y, 2.5)
+    for _, int in ipairs(intersections) do
+        px, py = map.mapToScreen(bestIntersection.x, bestIntersection.y, 2.5, Swidth, Sheight, int.x, int.y)
+        screen.setColor(255, 0, 0)
+        screen.drawCircle(px, py, 2)
+    end
+    screen.setColor(0, 255, 0)
+    for _, int in ipairs(bestIntersectionArray) do
+        px, py = map.mapToScreen(bestIntersection.x, bestIntersection.y, 2.5, Swidth, Sheight, int.x, int.y)
+        screen.drawCircle(px, py, 2)
+    end
+    screen.setColor(0, 0, 255)
+    if #pulsePoints > 10 then
+        for i = #pulsePoints - 10, #pulsePoints do
+            int = pulsePoints[i]
+            px, py = map.mapToScreen(bestIntersection.x, bestIntersection.y, 2.5, Swidth, Sheight, int.x, int.y)
+            screen.drawCircle(px, py, (int.r / 1000) / 2.5 * Swidth)
+        end
+    end
 end

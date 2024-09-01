@@ -11,6 +11,8 @@ Table of contents:
     - [1x1 Speed Screen](#1x1-speed-screen)
     - [2x1 Multi information main display](#2x1-multi-information-main-display)
   - [Utils](#utils)
+  - [Artificial Horizon 2x3](#artificial-horizon-2x3)
+  - [How to: Finding a Transponder signal](#how-to-finding-a-transponder-signal)
 
 
 
@@ -543,3 +545,85 @@ Features:
     - In white when in flight
     - Wit color and different Arrows and directions when near hovering or standing still (3D indicator)
 - Speed and altitude indicator with change on each of the sides
+
+## How to: Finding a Transponder signal
+
+To start, lets begin by defining the problem that we want to solve:
+ - We want to find a specific location, relying only on the distance, we received from a couple of beacon points.
+
+Beacons have the following format: `{x, y, d}` where X and Y are the position where the distance d was recorded. My first thought into this was, that of course this is a circle intersection problem, as explained here: [Github Code version of Algorithm](https://gist.github.com/jupdike/bfe5eb23d1c395d8a0a1a4ddd94882ac), this would be the ideal solution.
+
+But it isn't! Because for one, two circles almost always intersect in two points, at which point you need to pick one, and hope that you guessed right. Furthermore, as I found out way too deep into my second attempt at this ([First Attempt](/Transponder_Triangulator_Variable.lua), [Second Attempt](/TransponderLocate.lua)). Both failed, because I din't consider the limitations of Stormworks transponder locators.
+
+For example, I had just finished my second attempt's logic system, when I found out, that when heading towards or away from the transponder, the estimate would be placed to the side of the vessel. This may be attributed to the fact, that the resolution of the Stormworks transponder locator is poor. Therefore instead of all the circles being tangential and meeting at the origin point, they would overlap just slightly and paint a line of reasonable estimates along the right side of the vessel. Why it always preferred the right side, I don't know...
+
+Furthermore, my implementation to find the correct of the two circle intersection points involved cross-checking every single intersection with every other one:
+```lua
+function findBestIntersectionPoint(intersections)
+    bestIntersection = {}
+    bestDistance = math.huge
+    number = 0
+    for i = 1, #intersections do
+        sum = 0
+        for j = 1, #intersections do
+            if i ~= j then
+                sum = sum + math.sqrt((intersections[i].x - intersections[j].x) ^ 2 + (intersections[i].y - intersections[j].y) ^ 2)
+                number = number + 1
+            end
+        end
+        if sum < bestDistance then
+            bestDistance = sum
+            bestIntersection = intersections[i]
+        end
+    end
+    return bestIntersection, bestDistance, number
+end
+```
+This lead to a time complexity (just for this step) of $(n^2)-n$ or $O(n^2)$. This was so bad, that I could only use the latest 25 intersection points (600 calculations / tick), before the physics FPS would start to drop. I hope, that this approach fixes that issue!
+
+All the issues aside, the code still looked way better, then some of the other things I have written before xD:
+```lua
+if math.abs(math.sqrt((lastRecordPosition.x - gpsX) ^ 2 + (lastRecordPosition.y - gpsY) ^ 2)) > 10 then --only record a new pulsePoint if the distance between the last recorded position and the new position is greater than 10 meters to avoid recording the same position multiple times
+    table.insert(pulsePoints, {x = pulseX, y = pulseY, r = tDistanceAnalog})
+    lastRecordPosition = {x = gpsX, y = gpsY}
+    if #pulsePoints > 1 then --only calculate the intersection points if there are at least two pulsePoints
+        intersectionPoints = circleIntersection(pulsePoints[#pulsePoints], pulsePoints[#pulsePoints - 1])
+        if intersectionPoints then
+            table.insert(intersections, {x = intersectionPoints[1], y = intersectionPoints[2]})
+            table.insert(intersections, {x = intersectionPoints[3], y = intersectionPoints[4]})
+        end
+        --only calculate the best intersection point for the latest 50 pulsePoints because of the resource intensity
+        if #intersections > 0 then
+            table.insert(bestIntersectionArray, intersections[#intersections])
+            if # bestIntersectionArray > intersectionNum then
+                table.remove(bestIntersectionArray, 1)
+            end
+            bestIntersection, bestDistance, numCalculations = findBestIntersectionPoint(bestIntersectionArray)
+        end
+    end
+end
+```
+I must say, that this looks visually pleasing and the use of the `table` function makes this very readable. Only sad that it doesn't work...
+
+But what is the real solution here? As it turns out, it is Trilateration, as it is beautifully explained [in this article](https://www.alanzucconi.com/2017/03/13/positioning-and-trilateration/). It shows, why two circles are not enough and you need a third one to find the origin. I have tried visualizing it [using desmos](https://www.desmos.com/calculator/hbwmir6brc?lang=de).
+
+The article comes to the conclusion, that this is not a math problem, but more an optimization problem. The minimization of the distance between the point and the circumference of an arbitrary amount of circles. In the example, I have used three, but theoretically any number would be possible.
+
+To do this, the article suggest the use of the mean squared error and a gradient descend loop to approximate the origin as closely as necessary. I have implemented this in code as my [Trilateration Utils](/Utils/TrilaterationUtils.lua).
+
+The execution is pretty simple, I will go over it step by step:
+ - Take an educated guess, to where the center could be. This is done, by taking the average X and Y coordinate of all the beacons
+ - For any given guess, calculate the euclidean distance to each of the beacons and take the mean squared error to the provided distances
+ - Use a gradient descend loop to minimize the mean squared error
+ - Stop, when the accuracy is big enough
+
+All of this works and is available in the afore mentioned TrilaterationUtils file. This provides all the necessary functions to make this possible!
+
+The rest of the UI / UX design should be trivial xoxo!
+
+The idea for the logic is still pretty straight forward:
+ - Take a point every 50 - 100m or so
+ - Calculate new position based on the previous point as a starting point
+ - Display on screen
+ 
+[[return to Top]](#documentation-chroma-systems-lua-projects)
