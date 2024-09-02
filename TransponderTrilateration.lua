@@ -19,8 +19,8 @@ do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
     simulator = simulator
     simulator:setScreen(1, "3x2")
-    simulator:setScreen(2, "2x2")
-    simulator:setScreen(3, "3x3")
+    --simulator:setScreen(1, "2x2")
+    --simulator:setScreen(1, "3x3")
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -72,9 +72,6 @@ require("Utils.Utils")
 -- CHB3: Touch II
 --#endregion
 
-
-
-
 beacons = {}
 prevBeacon = {x = 0, y = 0}
 originGuess = nil
@@ -91,9 +88,32 @@ selfID = 0
 SelfIsSelected = false --whether or not this module is selected by the CH Main Controler
 isUsingCHZoom = true
 lastGlobalScale = 0
+centerOnGPS = false
+ButtonWidth = 8
+ButtonHeight = 8
+lastPressed = 0
+MapPanSpeed = 10
+PanCenter = {x = 87, y = 55}
+APOutput = {x = 0, y = 0} --output for the autopilot
+APSentActive = false
+signalColor = {r = 200, g = 75, b = 75}
 
 zoom = 5
 zooms = {0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
+
+buttons = {{x = 0, y = 0, t = "+",    f = function () isUsingCHZoom = false zoom = zoom + 1 < #zooms and zoom + 1 or zoom end},
+{x = 0, y = 8, t = "-",               f = function () isUsingCHZoom = false zoom = zoom - 1 > 1 and zoom - 1 or zoom end},
+{x = -8, t = "V",                     f = function () screenCenterY = screenCenterY - MapPanSpeed centerOnGPS = false end},
+{t = ">",                             f = function () screenCenterX = screenCenterX + MapPanSpeed centerOnGPS = false end},
+{x = -16, t = "<",                    f = function () screenCenterX = screenCenterX - MapPanSpeed centerOnGPS = false end},
+{x = -8, y = -8, t = "^",             f = function () screenCenterY = screenCenterY + MapPanSpeed centerOnGPS = false end},
+{y = -8, t = "C",                     f = function () centerOnGPS = true end},
+{x = -5, y = 0, t = "AP", w = 13,     f = function () APOutput = originGuess APSentActive = not APSentActive end}, -- if its active, send the output to the AP if not, sent flag is st to false, so no AP will activate
+{x = -21, y = 8, t = "CLEAR", w = 29, f = function () beacons = {} originGuess = nil end},
+{x = -21, y = 16, t = beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "00000" or "00000", w = 29, f = function() end, c = 0}
+
+}
+
 
 ticks = 0
 function onTick()
@@ -128,6 +148,20 @@ function onTick()
     lastGlobalScale = CHGlobalScale
     --#endregion
 
+    if centerOnGPS and SelfIsSelected then
+        screenCenterX, screenCenterY = gpsX, gpsY
+    end
+
+    if SelfIsSelected and isDepressed and ticks - lastPressed > 10 then
+        for _, button in ipairs(buttons) do
+            if isPointInRectangle(button.x, button.y, ButtonWidth, ButtonHeight, touchX, touchY) then
+                button.f()
+                lastPressed = ticks
+                break
+            end
+        end
+    end
+
     --#region Beacon Trilateration
     if SelfIsSelected then
         if tlActive then
@@ -149,6 +183,8 @@ function onTick()
     end
     --#endregion
 
+    signalColor = CHDarkmode and {r = 10, g = 50, b = 10} or {r = 200, g = 75, b = 75}
+
     --#region Setting values on Boot
     if ticks < 10 then
         screenCenterX, screenCenterY = gpsX, gpsY
@@ -159,29 +195,50 @@ end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
+    PanCenter = {x = Swidth - 9, y = Sheight - 9}
 
     if SelfIsSelected then
-        screen.drawMap(gpsX, gpsY, 5)
+        screen.drawMap(screenCenterX, screenCenterY, zooms[zoom])
         screen.setColor(0, 255, 0)
         for _, beacon in ipairs(beacons) do
-            px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, beacon.x, beacon.y)
+            px, py = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, beacon.x, beacon.y)
             screen.drawRectF(px, py, 2, 2)
         end
 
         screen.setColor(255, 0, 0)
         if originGuess then
-            px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
-            screen.drawCircle(px, py, (mse / 2000))
+            px, py = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
+            screen.drawCircle(px, py, math.clamp(mse / 2000, 2, 20))
         end
 
         screen.setColor(255, 255, 255)
-        --screen.drawText(2, 2, "MSE: " .. string.format("%.2f", mse))
-        --screen.drawText(2, 9, "N: " .. numIterations)
-        --screen.drawText(2, 16, "B: " .. #beacons)
 
         if originGuess then
             screen.drawText(2, 2, "X: " .. originGuess.x)
             screen.drawText(2, 9, "Y: " .. originGuess.y)
         end
+
+        for _, button in ipairs(buttons) do
+            drawButton(button)
+        end
     end
+end
+
+
+function drawButton(button)
+    local localWidth = button.w or ButtonWidth
+    button.x = button.x and button.x or PanCenter.x
+    button.y = button.y and button.y or PanCenter.y
+    button.x = button.x < 0 and PanCenter.x + button.x or button.x
+    button.y = button.y < 0 and PanCenter.y + button.y or button.y
+
+    if button.c then
+        screen.setColor(signalColor.r, signalColor.g, signalColor.b)
+    else
+        screen.setColor(100, 100, 100)
+    end
+    screen.drawRectF(button.x + 1, button.y + 1, localWidth - 1, ButtonHeight - 1)
+    screen.setColor(15, 15, 15)
+    screen.drawRect(button.x, button.y, localWidth, ButtonHeight)
+    screen.drawText(button.x + 3, button.y + 2, button.t)
 end

@@ -13,6 +13,7 @@ Table of contents:
   - [Utils](#utils)
   - [Artificial Horizon 2x3](#artificial-horizon-2x3)
   - [How to: Finding a Transponder signal](#how-to-finding-a-transponder-signal)
+  - [Multi-screen Controller](#multi-screen-controller)
 
 
 
@@ -626,4 +627,30 @@ The idea for the logic is still pretty straight forward:
  - Calculate new position based on the previous point as a starting point
  - Display on screen
  
+[[return to Top]](#documentation-chroma-systems-lua-projects)
+
+
+## Multi-screen Controller
+The Idea for this controller existed for a long time and tries to fix the following problem: imagine, you have a lot of instruments and different micro controllers, who's data you want to display all at once, but you only have two 2x3 monitors and a little space in between them.
+
+By adding this controller, I can share information across my different projects, allow the user to pick, which display elements he prefers the most and have ample space on the dash, so that I don't need 6 2x3 monitors to have the option to display the fish-finder and the radar at the same time.
+
+The BUS-Layout is as follows:
+ - Number Channels:
+    - Global Scale (Individual MCs can divert from that)
+    - GPS- / X / Y / Z (so that MC's can use the Multi-Controllers BUS instead of the standard physics sensor)
+    - Vehicle Compass
+    - Selected Module on Screen I  (For the individual MCs to know, if they are active)
+    - Selected Module on Screen II
+    - Touch I - / X / Y (So that the MCs can pick, which monitors touch input, they want to accept)
+    - Touch II- / X / Y
+  - Boolean Channels
+    - Global Dark mode
+    - Screen I  depressed
+    - Screen II depressed
+
+The Global scale is supposed to make it easy, to zoom on all the screens at the same time, so that information can be transferred from one to the other more easily.
+
+The Global Dark mode removes the need, to have every screen have an individual dark mode setting / button and improve the user experience.
+
 [[return to Top]](#documentation-chroma-systems-lua-projects)
