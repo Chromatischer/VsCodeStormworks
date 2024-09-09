@@ -14,6 +14,7 @@ Table of contents:
   - [Artificial Horizon 2x3](#artificial-horizon-2x3)
   - [How to: Finding a Transponder signal](#how-to-finding-a-transponder-signal)
   - [Multi-screen Controller](#multi-screen-controller)
+  - [New TWS System and algorithm](#new-tws-system-and-algorithm)
 
 
 
@@ -654,3 +655,15 @@ The Global scale is supposed to make it easy, to zoom on all the screens at the 
 The Global Dark mode removes the need, to have every screen have an individual dark mode setting / button and improve the user experience.
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
+
+
+## New TWS System and algorithm
+
+The basic idea is the same as before, doing a step by step approach like this:
+ - Collect new Radar data
+ - Update existing tracks using the new data
+ - Add Tracks for all new Data that was not used
+ - Delete old tracks that are no longer of interest
+
+The basic Idea behind the Update, is that you need to cross reference every single new Data point with every single track. Then choose the one with the smallest distance, that is larger then a threshold T. This can be accomplished using a two dimensional matrix, where you have rows of new data and columns of tracks and the distance as the value.
+Using this method, you can then: iterate backwards through the array and set a flag to the updated tracks, so that they won't be updated again.

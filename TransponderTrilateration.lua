@@ -32,6 +32,7 @@ do
         simulator:setInputBool(1, screenConnection.isTouched)
         simulator:setInputNumber(4, screenConnection.touchX)
         simulator:setInputNumber(5, screenConnection.touchY)
+        simulator:setInputNumber(1, 3)
     end;
 end
 ---@endsection
@@ -97,6 +98,8 @@ PanCenter = {x = 87, y = 55}
 APOutput = {x = 0, y = 0} --output for the autopilot
 APSentActive = false
 signalColor = {r = 200, g = 75, b = 75}
+beaconDistance = 0
+CHGlobalScale = 1
 
 zoom = 5
 zooms = {0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
@@ -110,8 +113,7 @@ buttons = {{x = 0, y = 0, t = "+",    f = function () isUsingCHZoom = false zoom
 {y = -8, t = "C",                     f = function () centerOnGPS = true end},
 {x = -5, y = 0, t = "AP", w = 13,     f = function () APOutput = originGuess APSentActive = not APSentActive end}, -- if its active, send the output to the AP if not, sent flag is st to false, so no AP will activate
 {x = -21, y = 8, t = "CLEAR", w = 29, f = function () beacons = {} originGuess = nil end},
-{x = -21, y = 16, t = beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "00000" or "00000", w = 29, f = function() end, c = 0}
-
+{x = -21, y = 16, t = "", w = 29, c = 0}
 }
 
 
@@ -124,7 +126,7 @@ function onTick()
     gpsX = input.getNumber(2)
     gpsY = input.getNumber(3)
     gpsZ = input.getNumber(4)
-    vesselAngle = input.getNumber(5)
+    vesselAngle = (input.getNumber(5) * 360) + 180 -- -0.5 -> 0.5 to 0 -> 360 conversion turns to degrees
     CHSel1 = input.getNumber(6)
     CHSel2 = input.getNumber(7)
     touchX = selfID == CHSel1 and input.getNumber(8) or input.getNumber(10)
@@ -140,7 +142,7 @@ function onTick()
 
     --#region Map Zoom
     if isUsingCHZoom then
-        zoom = CHGlobalScale
+        zoom = math.clamp(CHGlobalScale, 1, 21)
     end
     if CHGlobalScale ~= lastGlobalScale then
         isUsingCHZoom = true
@@ -155,7 +157,9 @@ function onTick()
     if SelfIsSelected and isDepressed and ticks - lastPressed > 10 then
         for _, button in ipairs(buttons) do
             if isPointInRectangle(button.x, button.y, ButtonWidth, ButtonHeight, touchX, touchY) then
-                button.f()
+                if button.f then
+                    button.f()
+                end
                 lastPressed = ticks
                 break
             end
@@ -164,6 +168,7 @@ function onTick()
 
     --#region Beacon Trilateration
     if SelfIsSelected then
+        MapPanSpeed = 100 * zooms[zoom]
         if tlActive then
             if distance(prevBeacon, {x = gpsX, y = gpsY}) > BeaconMinSeperation and tlPulse and beaconDistance > 150 then --add a new beacon if the distance is greater than 100 and a new distance is available
                 table.insert(beacons, {x = gpsX, y = gpsY, distance = beaconDistance})
@@ -207,20 +212,52 @@ function onDraw()
 
         screen.setColor(255, 0, 0)
         if originGuess then
-            px, py = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
-            screen.drawCircle(px, py, math.clamp(mse / 2000, 2, 20))
+            mapOriginX, mapOriginY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
+            screen.drawCircle(mapOriginX, mapOriginY, math.clamp(mse / 2000, 2, 20))
         end
 
         screen.setColor(255, 255, 255)
 
         if originGuess then
-            screen.drawText(2, 2, "X: " .. originGuess.x)
-            screen.drawText(2, 9, "Y: " .. originGuess.y)
+            screen.drawText(2, 2, "X: " .. math.floor(originGuess.x))
+            screen.drawText(2, 9, "Y: " .. math.floor(originGuess.y))
         end
+        screen.drawText(2, 16, CHGlobalScale)
+
+        mapGPSX, mapGPSY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, gpsX, gpsY)
+        screen.setColor(255, 0, 0)
+        screen.drawLine(mapGPSX, mapGPSY, mapOriginX, mapOriginY)
+
+        screen.setColor(255, 50, 50)
+        D = {x = mapGPSX, y = mapGPSY}
+        alpha = math.rad(vesselAngle)
+        beta = math.rad(30)
+        smallR = 5
+        bigR = 8
+        A = translatePoint(alpha, bigR, D)
+        B = translatePoint((alpha + 180) + beta, smallR, D)
+        C = translatePoint((alpha + 180) - beta, smallR, D)
+        screen.drawTriangleF(A.x, A.y, B.x, B.y, D.x, D.y)
+        screen.drawTriangleF(A.x, A.y, C.x, C.y, D.x, D.y)
+
+        --TODO: Draw the vessel position and angle (V)
+        --DONE: Draw current beacon bearing and range line (V)
+        --TODO: Draw latest beacon circle (V)
+        --TODO: Implement CHDarkmode as darkmode for the map and the buttons (V)
+
+        --TODO: Draw the AP output (I)
+        --TODO: Draw beacons with descending opacity based on age (II)
+        --TODO: Draw map zoom setting when changing / always visible (III)
+        --TODO: Draw the current estimated position as text when available (III) 
+        --TODO: Draw text when the map is panned (IV)
+        --TODO: Draw origin max resolution circle (IV)
 
         for _, button in ipairs(buttons) do
             drawButton(button)
         end
+
+        screen.setColor(15, 15, 15)
+        screen.drawText(PanCenter.x -18, 18, beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "-----" or "-----")
     end
 end
 
@@ -241,4 +278,8 @@ function drawButton(button)
     screen.setColor(15, 15, 15)
     screen.drawRect(button.x, button.y, localWidth, ButtonHeight)
     screen.drawText(button.x + 3, button.y + 2, button.t)
+end
+
+function translatePoint(angle, radius, point)
+    return {x = point.x + radius * math.sin(angle), y = point.y + radius * math.cos(angle)}
 end
