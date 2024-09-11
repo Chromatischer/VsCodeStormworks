@@ -23,7 +23,7 @@ end
 ---@class Track Track object
 ---@param coordinate table<x, y, z> Coordinate of the first point
 ---@return Track Track new track object at the given coordinate
----@section newTrack
+---@section Track
 function Track(coordinate)
     return {
         coordinates = {coordinate}, --table of coordinates (3D space) ---@type table<table<x, y, z>>
@@ -41,6 +41,9 @@ function Track(coordinate)
         end,
         getLatest = function (self)
             return self.coordinates[#self.coordinates]
+        end,
+        update = function (self)
+            self.tSinceUpdate = self.tSinceUpdate + 1
         end
     }
 end
@@ -79,6 +82,7 @@ end
 ---@return table<Track>, table<table<x, y, z>> Updated tracks and remaining contacts
 ---@section bestTrackAlgorithm
 function bestTrackAlgorithm(contacts, tracks, maxDistance)
+    --TODO: Maybe allow multi target assignment because of some errors experienced
     distanceArray = newMatrix(#contacts, #tracks, 0) --table<table<number>> Table of distances between each contact and each track
     usedTracks = {} --table<boolean> Table of used tracks
     bestTrackArray = {} --table<number> Table of the index of the best track for each contact

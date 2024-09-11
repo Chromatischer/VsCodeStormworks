@@ -66,8 +66,13 @@ selfID = 0
 SelfIsSelected = false
 reachedLimit = false
 
+isUsingCHZoom = true
+
 trackMaxUpdateTicks = 600
 trackMaxGroupDistance = 100
+
+zoom = 5
+zooms = {0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 
 ticks = 0
 function onTick()
@@ -88,22 +93,23 @@ function onTick()
     CHDarkmode = input.getBool(1)
     monitorIsTouched = CHSel1 == selfID and input.getBool(2) or input.getBool(3)
     SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
-    selfID = property.getNumber("Self ID: ")
+    selfID = property.getNumber("SelfID")
 
     --Read the raw data into the Raw tables
     local dataOffset = 14
     local boolOffset = 4
     for i = 0, 2 do
-        if input.getBool(i + boolOffset) then
+        distance = input.getNumber(i * 3 + dataOffset)
+        if input.getBool(i + boolOffset) and distance > 20 then
             --adds the contacts to the contacts table in the form of x, y, z coordinates
-            table.insert(contacts, radarToGlobalCoordinates(input.getNumber(i * 3 + dataOffset), input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, pitch))
+            table.insert(contacts, radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, pitch))
         end
     end
 
     radarIsContinousRotation = property.getBool("Radar Mode: ")
     --Right now I will not do pre-target smoothing using the time since detected... I will use the plain position, but this will be an option in the future
     --This checks if either the radar has done a full rotation, or if the radar has changed direction, so has hit one of its limits and is now moving the other way
-    if (radarRotation % 360 == 0 and radarIsContinousRotation) or (lastRadarDelta > 0 and radarMovingPositive or lastRadarDelta < 0 and not radarMovingPositive and not radarIsContinousRotation) then
+    if (lastRadarDelta > 0 and radarMovingPositive and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
         reachedLimit = true
         for i = #tracks, 1, -1 do --Step I: delete dead tracks
             if tracks[i].tSinceUpdate > trackMaxUpdateTicks then
@@ -117,7 +123,6 @@ function onTick()
             table.insert(tracks, Track(contacts[i]))
             table.remove(contacts, i)
         end
-        assert(#contacts == 0, "CTable not empty D:")
     end
     --#region Radar movement direction
     lastRadarDelta = radarRotation - lastRadarRotation
@@ -125,26 +130,40 @@ function onTick()
     radarMovingPositive = lastRadarDelta > 0
     --#endregion
 
+    for _, track in ipairs(tracks) do
+        track:update()
+    end
 
+    if isUsingCHZoom then
+        zoom = math.clamp(CHGlobalScale, 1, 21)
+    end
+    if CHGlobalScale ~= lastGlobalScale then
+        isUsingCHZoom = true
+    end
+    lastGlobalScale = CHGlobalScale
 
 end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    screen.setColor(255, 255, 255)
+    screen.drawMap(gpsX, gpsY, zooms[zoom])
+    screen.setColor(0, 255, 0)
     i = 0
     for _, track in ipairs(tracks) do
-        screen.drawText(2, 2 + i * 7, "T: ", i, " X: ", numToFormattedInt(track:getLatest().x, 4), " Y: ", numToFormattedInt(track:getLatest().y, 4), " Z: ", numToFormattedInt(track:getLatest().z, 4))
+        screen.drawText(2, 2 + i * 7, " X: " .. numToFormattedInt(track:getLatest().x, 4) .. " Y: " .. numToFormattedInt(track:getLatest().y, 4) .. " Z: " .. numToFormattedInt(track:getLatest().z, 4))
+        px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, track:getLatest().x, track:getLatest().y)
+        screen.drawRect(px - 2, py - 2, 4, 4)
         i = i + 1
     end
-    screen.drawText(2, 26, "C: ", #contacts)
-    screen.drawText(2, 33, "T: ", #tracks)
-    screen.drawText(2, 40, "RR: ", radarRotation)
-    screen.drawText(2, 47, "RM: ", radarMovingPositive)
+    screen.setColor(255, 255, 255, 50)
+    screen.drawText(10, 26, "C: " .. #contacts)
+    screen.drawText(10, 33, "T: " .. #tracks)
+    screen.drawText(10, 40, "RR: " .. radarRotation)
+    screen.drawText(10, 47, "RM: " .. (radarMovingPositive and "P" or "N"))
 
     if reachedLimit then
-        screen.setColor(255, 0, 0)
-        screen.drawClear()
+        screen.setColor(255, 0, 0, 50)
+        screen.drawRect(0, 0, Swidth, Sheight)
         reachedLimit = false
     end
 end
