@@ -44,40 +44,70 @@ end
 ---@endsection
 
 ---Tries to find the best tracks for a given number of contacts
+---
+---Time complexity: O(n^2) [use accordingly... try to avaoid unnessary calls]
+---
+---This malgorithm may not find the best solution. But the problability of finding a solution that is wrong, is very low. Because for one: two tracks and contact pairs have to be
+---extremely close to each other and the order of the contacts is reverse of that of the tracks in storage. This will make the tracks update with contacts that dont belong to them.
+---Imagine, having two planes flying in opposite directions and the contacts are mixed up. The order will swap and for a few ticks it will be wrong, but the algorithm will correct itself after a few updates.
+---
+---The algorithm works as follows:
+---
+---Iterate over the contacts in reverse order to remove contacts that have been assigned to a track
+---
+---For each contact, iterate over the tracks to find the best track for the current contact
+---
+---Check if the track has been used previously to avoid double assignment
+---
+---Calculate the distance between the contact and the track
+---
+---Assign the index of the best track to the bestTrackArray at the index of the current contact
+---
+---Check if a best track has been found for the current contact
+---
+---Check if the distance between the contact and the best track is less than the maximum distance
+---
+---Update the track accordingly
+---
+---Remove the contact from the contacts array as it has been assigned to a track
 ---@param contacts table<table<x, y, z>> Table of contacts
 ---@param tracks table<Track> Table of tracks
 ---@param maxDistance number Maximum distance between a contact and a track
 ---@return table<Track>, table<table<x, y, z>> Updated tracks and remaining contacts
 ---@section bestTrackAlgorithm
 function bestTrackAlgorithm(contacts, tracks, maxDistance)
-    --#region calculate the distance between each contact and each track and find the best track for each contact based on the minimum distance
     distanceArray = newMatrix(#contacts, #tracks, 0) --table<table<number>> Table of distances between each contact and each track
-    bestMinDistanceTrack = {} --table<number> Table of the index of the best track for each contact
-    for i = 1, #contacts do
+    usedTracks = {} --table<boolean> Table of used tracks
+    bestTrackArray = {} --table<number> Table of the index of the best track for each contact
+
+    for i = #contacts, 1, -1 do --iterate through the contact array in reverse order to remove contacts that have been assigned to a track
         minDistance = math.huge
-        for j = 1, #tracks do
-            distanceArray[i][j] = distance3D(contacts[i], tracks[j].coordinates[#tracks[j].coordinates])
-            if distanceArray[i][j] < minDistance then
-                minDistance = distanceArray[i][j]
-                bestMinDistanceTrack[i] = j
+        for j = 1, #tracks do --iterate through the track array to find the best track for the current contact
+            if usedTracks[j] ~= true then --check if the track has been used previously to avoid double assignment
+                dst = distance3D(contacts[i], tracks[j].coordinates[#tracks[j].coordinates]) --calculate the distance between the contact and the track
+                distanceArray[i][j] = dst
+                if dst < minDistance then
+                    minDistance = dst
+                    bestTrackArray[i] = j --assign the index of the best track to the bestTrackArray at the index of the current contact
+                end
+            end
+        end
+        if bestTrackArray[i] ~= nil then --check if a best track has been found for the current contact
+            if distanceArray[i][bestTrackArray[i]] < maxDistance then --check if the distance between the contact and the best track is less than the maximum distance
+                bestTrack = tracks[bestTrackArray[i]]
+
+                --update the track accordingly
+                table.insert(bestTrack.coordinates, contacts[i])
+                bestTrack.tSinceUpdate = 0
+                bestTrack:calcAngle()
+                bestTrack:calcSpeed()
+
+
+                --remove the contact from the contacts array as it has been assigned to a track
+                table.remove(contacts, i)
             end
         end
     end
-    --#endregion
-
-    --#region update the tracks with the best contact
-    for i = #contacts, 1, -1 do
-        bestTrack = tracks[bestMinDistanceTrack[i]] ---@type Track
-        if distanceArray[i][bestMinDistanceTrack[i]] <= maxDistance and bestTrack.tSinceUpdate ~= 0 then --checks for the min distance requirement and if the track has been updated previously
-            table.insert(bestTrack.coordinates, contacts[i])
-            bestTrack.tSinceUpdate = 0
-            bestTrack:calcAngle()
-            bestTrack:calcSpeed()
-            table.remove(contacts, i)
-        end
-    end
-    --#endregion
-
     return tracks, contacts --returns the updated tracks and the remaining contacts
 end
 ---@endsection
@@ -128,6 +158,7 @@ assert(distance2D({x = 0, y = 0}, {x = 0, y = 0}) == 0, "distance2D test 1 faile
 assert(distance2D({x = 0, y = 0}, {x = 1, y = 0}) == 1, "distance2D test 2 failed")
 assert(distance2D({x = 0, y = 0}, {x = 0, y = 1}) == 1, "distance2D test 3 failed")
 assert(distance2D({x = 0, y = 0}, {x = 1, y = 1}) == math.sqrt(2), "distance2D test 4 failed")
+print("Passed distacne 2D tests!")
 --#endregion
 
 --#region distance3D
@@ -136,6 +167,7 @@ assert(distance3D({x = 0, y = 0, z = 0}, {x = 1, y = 0, z = 0}) == 1, "distance3
 assert(distance3D({x = 0, y = 0, z = 0}, {x = 0, y = 1, z = 0}) == 1, "distance3D test 3 failed")
 assert(distance3D({x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 1}) == 1, "distance3D test 4 failed")
 assert(distance3D({x = 0, y = 0, z = 0}, {x = 1, y = 1, z = 1}) == math.sqrt(3), "distance3D test 5 failed")
+print("Passed distacne 3D tests!")
 --#endregion
 
 --#region newTrack
@@ -144,6 +176,7 @@ assert(track.coordinates[1].x == 0 and track.coordinates[1].y == 0 and track.coo
 assert(track.tSinceUpdate == 0, "newTrack test 2 failed")
 assert(track.angle == 0, "newTrack test 3 failed")
 assert(track.speed == 0, "newTrack test 4 failed")
+print("Passed newTrack tests!")
 --#endregion
 
 --#region bestTrackAlgorithm
@@ -155,6 +188,7 @@ tracks, contacts = bestTrackAlgorithm(contacts, tracks, maxDistance)
 assert(areTablesEqual(tracks[1].coordinates[#tracks[1].coordinates], {x = 0, y = 0, z = 0}), "bestTrackAlgorithm test 1 failed")
 assert(areTablesEqual(tracks[2].coordinates[#tracks[2].coordinates], {x = 1, y = 1, z = 1}), "bestTrackAlgorithm test 2 failed")
 assert(#contacts == 1, "bestTrackAlgorithm test 3 failed")
+print("Passed bestTrackAlgorithm tests!")
 --#endregion
 
 --#region updateTrackT
@@ -162,15 +196,18 @@ tracks = {Track({x = 0, y = 0, z = 0}), Track({x = 1, y = 1, z = 1})}
 tracks = updateTrackT(tracks)
 assert(tracks[1].tSinceUpdate == 1, "updateTrackT test 1 failed")
 assert(tracks[2].tSinceUpdate == 1, "updateTrackT test 2 failed")
+print("Passed updateTrackT tests!")
 --#endregion
 
 --#region newMatrix
 matrix = newMatrix(2, 2, 0)
 assert(matrix[1][1] == 0 and matrix[1][2] == 0 and matrix[2][1] == 0 and matrix[2][2] == 0, "newMatrix test 1 failed")
+print("Passed newMatrix tests!")
 --#endregion
 
 --#region areTablesEqual
 assert(areTablesEqual({1, 2, 3}, {1, 2, 3}), "areTablesEqual test 1 failed")
 assert(not areTablesEqual({1, 2, 3}, {1, 2, 4}), "areTablesEqual test 2 failed")
+print("Passed areTablesEqual tests!")
 --#endregion
 ---@endsection
