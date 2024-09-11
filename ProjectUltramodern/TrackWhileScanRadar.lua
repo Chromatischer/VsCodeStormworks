@@ -34,7 +34,7 @@ end
 ---@endsection
 
 require("Utils.Utils")
-require("Utils.TrackWhileScanUtils")
+require("Utils.Radar.TrackWhileScanUtils")
 require("Utils.Coordinate.radarToGlobalCoordinates")
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
