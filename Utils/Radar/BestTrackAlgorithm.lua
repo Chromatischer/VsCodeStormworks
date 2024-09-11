@@ -38,6 +38,9 @@ function Track(coordinate)
         end,
         tostring = function (self)
             return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
+        end,
+        getLatest = function (self)
+            return self.coordinates[#self.coordinates]
         end
     }
 end

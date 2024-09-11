@@ -39,9 +39,9 @@ end
 require("Utils.Utils")
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
-require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.Radar.TrackWhileScanUtils")
-require("Utils.HungarianAlgorithm")
+require("Utils.Radar.HungarianAlgorithm")
 
 globalScreenScale = 3
 globalScreenScales = {100, 250, 500, 750, 1000, 1250, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000}

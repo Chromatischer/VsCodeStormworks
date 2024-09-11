@@ -45,7 +45,7 @@ end
 ---@endsection
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
-require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.Radar.TrackWhileScanUtils")
 require("LifeBoatAPI")
 

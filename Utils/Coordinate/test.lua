@@ -1,7 +1,7 @@
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
 require("Utils.Utils")
-require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Radar.radarToGlobalCoordinates")
 
 first = newCoordinate(-1, -1, -1)
 second = newCoordinate(0, 0, 0)

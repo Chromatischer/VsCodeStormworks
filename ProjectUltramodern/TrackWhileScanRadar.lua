@@ -35,9 +35,10 @@ end
 
 require("Utils.Utils")
 require("Utils.Radar.TrackWhileScanUtils")
-require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.Coordinate.Coordinate")
 require("Utils.Coordinate.Coordinate_Utils")
+require("Utils.Radar.HungarianAlgorithm")
 
 tempRadarData = {}
 tracks = {}

@@ -166,3 +166,15 @@ function math.round(number)
     end
 end
 ---@endsection
+
+---Formats a number to a string with a fixed number of digits
+---
+---Format: "%02d" -> 1 -> "01"
+---@param number number the number to format
+---@param digits number the number of digits to format the number to
+---@return string string the formatted number as a string
+---@section numToFormattedInt
+function numToFormattedInt(number, digits)
+    return string.format("%0" .. digits .. "d", math.round(number))
+end
+---@endsection

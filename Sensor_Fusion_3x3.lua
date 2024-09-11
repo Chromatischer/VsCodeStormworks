@@ -38,7 +38,7 @@ end
 ---@endsection
 
 require("Utils.Utils")
-require("Utils.Coordinate.radarToGlobalCoordinates")
+require("Utils.Radar.radarToGlobalCoordinates")
 
 ticks = 0
 cameraInfraredActive = false
