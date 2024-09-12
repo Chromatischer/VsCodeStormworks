@@ -31,8 +31,8 @@ end
 ---With a color if c is set (signalColor)
 ---@param button table<x, y, t, w, c>
 ---@section drawCHButton
-function drawCHButton(button, isDarkMode, ButtonWidth, ButtonHeight, PanCenter)
-    local localWidth = button.w or ButtonWidth
+function drawCHButton(button, isDarkMode, PanCenter)
+    local localWidth = button.w or 8
     button.x = button.x and button.x or PanCenter.x
     button.y = button.y and button.y or PanCenter.y
     button.x = button.x < 0 and PanCenter.x + button.x or button.x
@@ -43,9 +43,9 @@ function drawCHButton(button, isDarkMode, ButtonWidth, ButtonHeight, PanCenter)
     else
         setColorGrey(100, isDarkMode)
     end
-    screen.drawRectF(button.x + 1, button.y + 1, localWidth - 1, ButtonHeight - 1)
+    screen.drawRectF(button.x + 1, button.y + 1, localWidth - 1, 8 - 1)
     setColorGrey(15, isDarkMode)
-    screen.drawRect(button.x, button.y, localWidth, ButtonHeight)
+    screen.drawRect(button.x, button.y, localWidth, 8)
     screen.drawText(button.x + 3, button.y + 2, button.t)
 end
 ---@endsection
@@ -81,11 +81,11 @@ end
 function setMapColors(isDarkMode)
     if isDarkMode then
         screen.setMapColorOcean(0, 0, 0)
-        screen.setMapColorShallows(55, 55, 55)
-        screen.setMapColorLand(80, 80, 80)
-        screen.setMapColorGrass(80, 80, 80)
-        screen.setMapColorSand(80, 80, 80)
-        screen.setMapColorSnow(80, 80, 80)
+        screen.setMapColorShallows(20, 20, 20)
+        screen.setMapColorLand(30, 30, 30)
+        screen.setMapColorGrass(30, 30, 30)
+        screen.setMapColorSand(30, 30, 30)
+        screen.setMapColorSnow(30, 30, 30)
     else
         screen.setMapColorOcean(5, 25, 26)
         screen.setMapColorShallows(10, 45, 50)

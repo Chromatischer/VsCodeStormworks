@@ -6,14 +6,6 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
-
---[====[ HOTKEYS ]====]
--- Press F6 to simulate this file
--- Press F7 to build the project, copy the output from /_build/out/ into the game to use
--- Remember to set your Author name etc. in the settings: CTRL+COMMA
-
-
---[====[ EDITABLE SIMULATOR CONFIG - *automatically removed from the F7 build output ]====]
 ---@section __LB_SIMULATOR_ONLY__
 do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
@@ -91,8 +83,6 @@ SelfIsSelected = false --whether or not this module is selected by the CH Main C
 isUsingCHZoom = true
 lastGlobalScale = 0
 centerOnGPS = false
-ButtonWidth = 8
-ButtonHeight = 8
 lastPressed = 0
 MapPanSpeed = 10
 PanCenter = {x = 87, y = 55}
@@ -156,7 +146,7 @@ function onTick()
 
     if SelfIsSelected and isDepressed and ticks - lastPressed > 10 then
         for _, button in ipairs(buttons) do
-            if isPointInRectangle(button.x, button.y, ButtonWidth, ButtonHeight, touchX, touchY) then
+            if isPointInRectangle(button.x, button.y, button.w or 8, 8, touchX, touchY) then
                 if button.f then
                     button.f()
                 end
@@ -201,7 +191,7 @@ function onDraw()
     PanCenter = {x = Swidth - 9, y = Sheight - 9}
 
     if SelfIsSelected then
-        
+
         setMapColors(CHDarkmode)
 
         screen.drawMap(screenCenterX, screenCenterY, zooms[zoom])
@@ -229,23 +219,24 @@ function onDraw()
 
         drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
-        --DONE: Draw the vessel position and angle (V)
-        --DONE: Draw current beacon bearing and range line (V)
-        --DONE: Draw latest beacon circle (V)
-        --DONE: Implement CHDarkmode as darkmode for the map and the buttons (V)
-
-        --TODO: Draw the AP output (I)
-        --TODO: Draw beacons with descending opacity based on age (II)
-        --TODO: Draw map zoom setting when changing / always visible (III)
-        --DONE: Draw the current estimated position as text when available (III) 
-        --TODO: Draw text when the map is panned (IV)
-        --DONE: Draw origin max resolution circle (IV)
-
         for _, button in ipairs(buttons) do
-            drawCHButton(button, CHDarkmode, ButtonWidth, ButtonHeight, PanCenter)
+            drawCHButton(button, CHDarkmode, PanCenter)
         end
 
         setColorGrey(15, CHDarkmode)
         screen.drawText(PanCenter.x -18, 18, beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "-----" or "-----")
     end
 end
+
+
+--DONE: Draw the vessel position and angle (V)
+--DONE: Draw current beacon bearing and range line (V)
+--DONE: Draw latest beacon circle (V)
+--DONE: Implement CHDarkmode as darkmode for the map and the buttons (V)
+
+--TODO: Draw the AP output (I)
+--DONT: Draw beacons with descending opacity based on age (II)
+--TODO: Draw map zoom setting when changing / always visible (III)
+--DONE: Draw the current estimated position as text when available (III) 
+--DONT: Draw text when the map is panned (IV)
+--DONE: Draw origin max resolution circle (IV)
