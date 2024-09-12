@@ -178,3 +178,14 @@ function numToFormattedInt(number, digits)
     return string.format("%0" .. digits .. "d", math.round(number))
 end
 ---@endsection
+
+---Translates a point by a given angle and radius
+---@param angle number the angle to translate the point by
+---@param radius number the radius to translate the point by
+---@param point table<x, y> the point to translate
+---@return table<x, y> table the translated point
+---@section translatePoint
+function translatePoint(angle, radius, point)
+    return {x = point.x + radius * math.sin(angle), y = point.y + radius * math.cos(angle)}
+end
+---@endsection

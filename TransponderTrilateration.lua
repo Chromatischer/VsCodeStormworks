@@ -39,6 +39,7 @@ end
 
 require("Utils.TrilaterationUtils")
 require("Utils.Utils")
+require("Utils.DrawAddons")
 
 --#region Input Layout
 -- Number Inputs:
@@ -97,7 +98,6 @@ MapPanSpeed = 10
 PanCenter = {x = 87, y = 55}
 APOutput = {x = 0, y = 0} --output for the autopilot
 APSentActive = false
-signalColor = {r = 200, g = 75, b = 75}
 beaconDistance = 0
 CHGlobalScale = 1
 
@@ -188,8 +188,6 @@ function onTick()
     end
     --#endregion
 
-    signalColor = CHDarkmode and {r = 10, g = 50, b = 10} or {r = 200, g = 75, b = 75}
-
     --#region Setting values on Boot
     if ticks < 10 then
         screenCenterX, screenCenterY = gpsX, gpsY
@@ -203,83 +201,51 @@ function onDraw()
     PanCenter = {x = Swidth - 9, y = Sheight - 9}
 
     if SelfIsSelected then
+        
+        setMapColors(CHDarkmode)
+
         screen.drawMap(screenCenterX, screenCenterY, zooms[zoom])
         screen.setColor(0, 255, 0)
         for _, beacon in ipairs(beacons) do
             px, py = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, beacon.x, beacon.y)
-            screen.drawRectF(px, py, 2, 2)
+            if _ == #beacons then
+                screen.drawCircle(px, py, beaconDistance / (zooms[zoom] * 1000) * Swidth)
+            else
+                screen.drawRectF(px, py, 2, 2)
+            end
         end
+
+        mapGPSX, mapGPSY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, gpsX, gpsY)
 
         screen.setColor(255, 0, 0)
         if originGuess then
             mapOriginX, mapOriginY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
             screen.drawCircle(mapOriginX, mapOriginY, math.clamp(mse / 2000, 2, 20))
-        end
-
-        screen.setColor(255, 255, 255)
-
-        if originGuess then
+            screen.drawLine(mapGPSX, mapGPSY, mapOriginX, mapOriginY)
+            setColorGrey(255, CHDarkmode)
             screen.drawText(2, 2, "X: " .. math.floor(originGuess.x))
             screen.drawText(2, 9, "Y: " .. math.floor(originGuess.y))
         end
-        screen.drawText(2, 16, CHGlobalScale)
 
-        mapGPSX, mapGPSY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, gpsX, gpsY)
-        screen.setColor(255, 0, 0)
-        screen.drawLine(mapGPSX, mapGPSY, mapOriginX, mapOriginY)
+        drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
-        screen.setColor(255, 50, 50)
-        D = {x = mapGPSX, y = mapGPSY}
-        alpha = math.rad(vesselAngle)
-        beta = math.rad(30)
-        smallR = 5
-        bigR = 8
-        A = translatePoint(alpha, bigR, D)
-        B = translatePoint((alpha + 180) + beta, smallR, D)
-        C = translatePoint((alpha + 180) - beta, smallR, D)
-        screen.drawTriangleF(A.x, A.y, B.x, B.y, D.x, D.y)
-        screen.drawTriangleF(A.x, A.y, C.x, C.y, D.x, D.y)
-
-        --TODO: Draw the vessel position and angle (V)
+        --DONE: Draw the vessel position and angle (V)
         --DONE: Draw current beacon bearing and range line (V)
-        --TODO: Draw latest beacon circle (V)
-        --TODO: Implement CHDarkmode as darkmode for the map and the buttons (V)
+        --DONE: Draw latest beacon circle (V)
+        --DONE: Implement CHDarkmode as darkmode for the map and the buttons (V)
 
         --TODO: Draw the AP output (I)
         --TODO: Draw beacons with descending opacity based on age (II)
         --TODO: Draw map zoom setting when changing / always visible (III)
-        --TODO: Draw the current estimated position as text when available (III) 
+        --DONE: Draw the current estimated position as text when available (III) 
         --TODO: Draw text when the map is panned (IV)
-        --TODO: Draw origin max resolution circle (IV)
+        --DONE: Draw origin max resolution circle (IV)
 
         for _, button in ipairs(buttons) do
-            drawButton(button)
+            drawCHButton(button, CHDarkmode, ButtonWidth, ButtonHeight, PanCenter)
         end
 
-        screen.setColor(15, 15, 15)
+        setColorGrey(15, CHDarkmode)
         screen.drawText(PanCenter.x -18, 18, beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "-----" or "-----")
     end
-end
-
-
-function drawButton(button)
-    local localWidth = button.w or ButtonWidth
-    button.x = button.x and button.x or PanCenter.x
-    button.y = button.y and button.y or PanCenter.y
-    button.x = button.x < 0 and PanCenter.x + button.x or button.x
-    button.y = button.y < 0 and PanCenter.y + button.y or button.y
-
-    if button.c then
-        screen.setColor(signalColor.r, signalColor.g, signalColor.b)
-    else
-        screen.setColor(100, 100, 100)
-    end
-    screen.drawRectF(button.x + 1, button.y + 1, localWidth - 1, ButtonHeight - 1)
-    screen.setColor(15, 15, 15)
-    screen.drawRect(button.x, button.y, localWidth, ButtonHeight)
-    screen.drawText(button.x + 3, button.y + 2, button.t)
-end
-
-function translatePoint(angle, radius, point)
-    return {x = point.x + radius * math.sin(angle), y = point.y + radius * math.cos(angle)}
 end

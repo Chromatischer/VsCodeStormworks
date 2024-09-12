@@ -28,13 +28,14 @@ function Track(coordinate)
     return {
         coordinates = {coordinate}, --table of coordinates (3D space) ---@type table<table<x, y, z>>
         tSinceUpdate = 0, --time in ticks
+        tickDeltas = {}, --table of time deltas between each update
         angle = 0, --in radians
-        speed = 0, --in m/s
+        speed = 0, ---@type number Meters per tick
         calcAngle = function (self)
             angle = math.sin((self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y) / distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]))
         end,
         calcSpeed = function (self)
-            speed = distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]) / (self.tSinceUpdate / 60) --speed in m/s
+            speed = distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]) / self.tSinceUpdate --m/tick
         end,
         tostring = function (self)
             return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
@@ -43,7 +44,15 @@ function Track(coordinate)
             return self.coordinates[#self.coordinates]
         end,
         update = function (self)
+            table.insert(self.tickDeltas, self.tSinceUpdate)
             self.tSinceUpdate = self.tSinceUpdate + 1
+        end,
+        calcEstimatePosition = function (self)
+            return {
+                x = self.coordinates[#self.coordinates].x + self.speed * math.cos(self.angle) * self.tSinceUpdate,
+                y = self.coordinates[#self.coordinates].y + self.speed * math.sin(self.angle) * self.tSinceUpdate,
+                z = self.coordinates[#self.coordinates].z
+            }
         end
     }
 end

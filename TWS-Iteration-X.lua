@@ -109,7 +109,7 @@ function onTick()
     radarIsContinousRotation = property.getBool("Radar Mode: ")
     --Right now I will not do pre-target smoothing using the time since detected... I will use the plain position, but this will be an option in the future
     --This checks if either the radar has done a full rotation, or if the radar has changed direction, so has hit one of its limits and is now moving the other way
-    if (lastRadarDelta > 0 and radarMovingPositive and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
+    if (not (lastRadarDelta > 0 and radarMovingPositive) and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
         reachedLimit = true
         for i = #tracks, 1, -1 do --Step I: delete dead tracks
             if tracks[i].tSinceUpdate > trackMaxUpdateTicks then
@@ -147,12 +147,18 @@ end
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
     screen.drawMap(gpsX, gpsY, zooms[zoom])
-    screen.setColor(0, 255, 0)
     i = 0
     for _, track in ipairs(tracks) do
-        screen.drawText(2, 2 + i * 7, " X: " .. numToFormattedInt(track:getLatest().x, 4) .. " Y: " .. numToFormattedInt(track:getLatest().y, 4) .. " Z: " .. numToFormattedInt(track:getLatest().z, 4))
+        --screen.setColor(255, 255, 255, 20)
+        --screen.drawText(2, 2 + i * 7, " X:" .. numToFormattedInt(track:getLatest().x, 4) .. " Y:" .. numToFormattedInt(track:getLatest().y, 4))
+        screen.setColor(0, 255, 0)
         px, py = map.mapToScreen(gpsX, gpsY, zooms[zoom], Swidth, Sheight, track:getLatest().x, track:getLatest().y)
-        screen.drawRect(px - 2, py - 2, 4, 4)
+        screen.drawLine(px - 2, py, px + 2, py)
+        screen.drawLine(px - 2, py + 1, px - 2, py)
+        screen.drawLine(px + 2, py + 1, px + 2, py)
+        screen.setColor(255, 255, 0)
+        mx, my = px + (track.speed * 10) * math.sin(track.angle), py + (track.speed * 10) * math.cos(track.angle)
+        screen.drawLine(px, py, mx, my)
         i = i + 1
     end
     screen.setColor(255, 255, 255, 50)
