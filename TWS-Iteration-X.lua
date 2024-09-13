@@ -56,6 +56,8 @@ contacts = {} ---@type table<x, y, z> Contacts
 selfID = 0
 SelfIsSelected = false
 reachedLimit = false
+lastPressed = 0
+MapPanSpeed = 100
 
 isUsingCHZoom = true
 centerOnGPS = true
@@ -102,6 +104,8 @@ function onTick()
 
     --Read the raw data into the Raw tables
     if SelfIsSelected then
+        MapPanSpeed = 100 * zooms[zoom]
+
         local dataOffset = 14
         local boolOffset = 4
         for i = 0, 2 do
@@ -116,7 +120,7 @@ function onTick()
 
         if isDepressed and ticks - lastPressed > 10 then
             for _, button in ipairs(buttons) do
-                if isPointInRectangle(button.x, button.y, button.w or 8, 8, touchX, touchY) then
+                if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
                     if button.f then
                         button.f()
                     end
@@ -190,6 +194,7 @@ function onDraw()
         screen.drawLine(px - 2, py + 1, px - 2, py)
         screen.drawLine(px + 2, py + 1, px + 2, py)
         setSignalColor(CHDarkmode)
+        bigR = track.speed * 3600 --1 pixel per kph I think because speed is in tps -> mps (*60) -> kph (*60)
         mx, my = px + (track.speed * 10) * math.sin(track.angle), py + (track.speed * 10) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
         i = i + 1

@@ -146,7 +146,7 @@ function onTick()
 
     if SelfIsSelected and isDepressed and ticks - lastPressed > 10 then
         for _, button in ipairs(buttons) do
-            if isPointInRectangle(button.x, button.y, button.w or 8, 8, touchX, touchY) then
+            if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
                 if button.f then
                     button.f()
                 end
