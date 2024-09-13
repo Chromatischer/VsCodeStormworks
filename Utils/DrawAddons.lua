@@ -1,5 +1,3 @@
-require("Utils.Utils")
-
 ---Draws the vessel position and rotation to the screen
 ---@param screenX number the X position on screen to draw the indicator at
 ---@param screenY number the Y position on screen to draw the indicator at
