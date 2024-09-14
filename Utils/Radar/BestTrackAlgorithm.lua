@@ -28,7 +28,6 @@ function Track(coordinate)
     return {
         coordinates = {coordinate}, --table of coordinates (3D space) ---@type table<table<x, y, z>>
         tSinceUpdate = 0, --time in ticks
-        tickDeltas = {}, --table of time deltas between each update
         angle = 0, --in radians
         speed = 0, ---@type number Meters per tick
         calcAngle = function (self)
@@ -37,14 +36,13 @@ function Track(coordinate)
         calcSpeed = function (self)
             speed = distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]) / self.tSinceUpdate --m/tick
         end,
-        tostring = function (self)
-            return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
-        end,
+        --tostring = function (self)
+        --    return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
+        --end,
         getLatest = function (self)
             return self.coordinates[#self.coordinates]
         end,
         update = function (self)
-            table.insert(self.tickDeltas, self.tSinceUpdate)
             self.tSinceUpdate = self.tSinceUpdate + 1
         end,
         calcEstimatePosition = function (self)
@@ -118,7 +116,6 @@ function bestTrackAlgorithm(contacts, tracks, maxDistance)
                 bestTrack:calcAngle()
                 bestTrack:calcSpeed()
 
-
                 --remove the contact from the contacts array as it has been assigned to a track
                 table.remove(contacts, i)
             end
@@ -147,7 +144,7 @@ end
 ---@return table<table<any>> 2DMatrix new matrix filled with the given value
 ---@section newMatrix
 function newMatrix(rows, cols, val)
-    local matrix = {}
+    matrix = {}
     for i = 1, rows do
         matrix[i] = {}
         for j = 1, cols do

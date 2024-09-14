@@ -53,80 +53,45 @@ lastRadarDelta = 0
 radarMovingPositive = true
 tracks = {} ---@type table<Track> Tracks
 contacts = {} ---@type table<x, y, z> Contacts
-selfID = 0
 SelfIsSelected = false
 reachedLimit = false
-lastPressed = 0
-MapPanSpeed = 100
-
-isUsingCHZoom = true
-centerOnGPS = true
-screenCenterX, screenCenterY = 0, 0
-
+screenCenterX = 0
+screenCenterY = 0
+gpsX, gpxY, gpsZ = 0, 0, 0
+finalZoom = 1
 
 trackMaxUpdateTicks = 600
 trackMaxGroupDistance = 100
 
-zoom = 5
-zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
-
-buttons = {{x = 0, y = 0, t = "+",    f = function () isUsingCHZoom = false zoom = zoom + 1 < #zooms and zoom + 1 or zoom end},
-{x = 0, y = 8, t = "-",               f = function () isUsingCHZoom = false zoom = zoom - 1 > 1 and zoom - 1 or zoom end},
-{x = -8, t = "V",                     f = function () screenCenterY = screenCenterY - MapPanSpeed centerOnGPS = false end},
-{t = ">",                             f = function () screenCenterX = screenCenterX + MapPanSpeed centerOnGPS = false end},
-{x = -16, t = "<",                    f = function () screenCenterX = screenCenterX - MapPanSpeed centerOnGPS = false end},
-{x = -8, y = -8, t = "^",             f = function () screenCenterY = screenCenterY + MapPanSpeed centerOnGPS = false end},
-{y = -8, t = "C",                     f = function () centerOnGPS = true end},
-}
-
-
-
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    CHGlobalScale = input.getNumber(1)
-    gpsX = input.getNumber(2)
-    gpsY = input.getNumber(3)
-    gpsZ = input.getNumber(4)
-    compas = input.getNumber(5)
-    CHSel1 = input.getNumber(6)
-    CHSel2 = input.getNumber(7)
-    touchX = CHSel1 == selfID and input.getNumber(8) or input.getNumber(10)
-    touchY = CHSel1 == selfID and input.getNumber(9) or input.getNumber(11)
-    radarRotation = (input.getNumber(12) * 360) % 360
-    pitch = input.getNumber(13)
+    gpsX = input.getNumber(1)
+    gpsY = input.getNumber(2)
+    gpsZ = input.getNumber(3)
+    vesselAngle = input.getNumber(4)
+    compas = (vesselAngle - 180) / 360 --This is fucking stupid and I go to hell for this... just wildly inefficient (reverse conversion :D)
+    finalZoom = input.getNumber(5)
+    screenCenterX = input.getNumber(6)
+    screenCenterY = input.getNumber(7)
+    touchX = input.getNumber(8)
+    touchY = input.getNumber(9)
 
+    radarRotation = input.getNumber(10)
 
-    CHDarkmode = input.getBool(1)
-    isDepressed = CHSel1 == selfID and input.getBool(2) or input.getBool(3)
-    SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
-    selfID = property.getNumber("SelfID")
+    isDepressed = input.getBool(1)
+    CHDarkmode = input.getBool(2)
+    SelfIsSelected = input.getBool(3)
 
     --Read the raw data into the Raw tables
     if SelfIsSelected then
-        MapPanSpeed = 100 * zooms[zoom]
-
-        local dataOffset = 14
-        local boolOffset = 4
+        dataOffset = 11
+        boolOffset = 4
         for i = 0, 2 do
             distance = input.getNumber(i * 3 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
                 --adds the contacts to the contacts table in the form of x, y, z coordinates
-                table.insert(contacts,
-                    radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset),
-                        input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, pitch))
-            end
-        end
-
-        if isDepressed and ticks - lastPressed > 10 then
-            for _, button in ipairs(buttons) do
-                if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
-                    if button.f then
-                        button.f()
-                    end
-                    lastPressed = ticks
-                    break
-                end
+                table.insert(contacts, radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
             end
         end
 
@@ -157,62 +122,30 @@ function onTick()
         for _, track in ipairs(tracks) do
             track:update()
         end
-        if centerOnGPS then
-            screenCenterX, screenCenterY = gpsX, gpsY
-        end
     end
-
-    if isUsingCHZoom then
-        zoom = math.clamp(CHGlobalScale, 1, 21)
-    end
-    if CHGlobalScale ~= lastGlobalScale then
-        isUsingCHZoom = true
-    end
-    lastGlobalScale = CHGlobalScale
-
-    --#region Setting values on Boot
-    if ticks < 10 then
-        screenCenterX, screenCenterY = gpsX, gpsY
-        lastGlobalScale = CHGlobalScale
-    end
-    --#endregion
 end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    PanCenter = {x = Swidth - 9, y = Sheight - 9}
-
-    setMapColors(CHDarkmode)
-    screen.drawMap(screenCenterX, screenCenterY, zooms[zoom])
     i = 0
     for _, track in ipairs(tracks) do
         --screen.setColor(255, 255, 255, 20)
         --screen.drawText(2, 2 + i * 7, " X:" .. numToFormattedInt(track:getLatest().x, 4) .. " Y:" .. numToFormattedInt(track:getLatest().y, 4))
         setSignalColor(CHDarkmode)
-        px, py = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, track:getLatest().x, track:getLatest().y)
+        px, py = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, track:getLatest().x, track:getLatest().y)
         screen.drawLine(px - 2, py, px + 2, py)
         screen.drawLine(px - 2, py + 1, px - 2, py)
         screen.drawLine(px + 2, py + 1, px + 2, py)
         setSignalColor(CHDarkmode)
         bigR = track.speed * 3600 --1 pixel per kph I think because speed is in tps -> mps (*60) -> kph (*60)
-        mx, my = px + (track.speed * 10) * math.sin(track.angle), py + (track.speed * 10) * math.cos(track.angle)
+        mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
         i = i + 1
     end
-
-    --screen.setColor(255, 255, 255, 50)
-    --screen.drawText(10, 26, "C: " .. #contacts)
-    --screen.drawText(10, 33, "T: " .. #tracks)
-    --screen.drawText(10, 40, "RR: " .. radarRotation)
-    --screen.drawText(10, 47, "RM: " .. (radarMovingPositive and "P" or "N"))
 
     if reachedLimit then
         screen.setColor(255, 0, 0, 50)
         screen.drawRect(0, 0, Swidth, Sheight)
         reachedLimit = false
-    end
-
-    for _, button in ipairs(buttons) do
-        drawCHButton(button, CHDarkmode, PanCenter)
     end
 end

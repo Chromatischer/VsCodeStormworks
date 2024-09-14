@@ -8,12 +8,10 @@ function drawDirectionIndicator(screenX, screenY, isDarkMode, vesselAngle)
     setSignalColor(isDarkMode)
     D = {x = screenX, y = screenY}
     alpha = math.rad(vesselAngle)
-    beta = math.rad(30)
-    smallR = 5
-    bigR = 8
-    A = translatePoint(alpha, bigR, D)
-    B = translatePoint((alpha + 180) + beta, smallR, D)
-    C = translatePoint((alpha + 180) - beta, smallR, D)
+    beta = .52
+    A = translatePoint(alpha, 8, D)
+    B = translatePoint((alpha + 180) + beta, 5, D)
+    C = translatePoint((alpha + 180) - beta, 5, D)
     screen.drawTriangleF(A.x, A.y, B.x, B.y, D.x, D.y)
     screen.drawTriangleF(A.x, A.y, C.x, C.y, D.x, D.y)
 end
@@ -30,7 +28,7 @@ end
 ---@param button table<x, y, t, w, c>
 ---@section drawCHButton
 function drawCHButton(button, isDarkMode, PanCenter)
-    local localWidth = button.w or 8
+   localWidth = button.w or 8
     button.x = button.x and button.x or PanCenter.x
     button.y = button.y and button.y or PanCenter.y
     button.x = button.x < 0 and PanCenter.x + button.x or button.x

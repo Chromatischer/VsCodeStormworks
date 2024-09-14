@@ -72,9 +72,6 @@ originGuess = nil
 mse = 0
 numIterations = 0
 MaxBeaconCount = 20
-TrilaterationSteps = 500
-TrilaterationThreshold = 5
-TrilaterationRate = 0.01
 BeaconMinSeperation = 20
 screenCenterX = 0
 screenCenterY = 0
@@ -140,24 +137,25 @@ function onTick()
     lastGlobalScale = CHGlobalScale
     --#endregion
 
-    if centerOnGPS and SelfIsSelected then
-        screenCenterX, screenCenterY = gpsX, gpsY
-    end
-
-    if SelfIsSelected and isDepressed and ticks - lastPressed > 10 then
-        for _, button in ipairs(buttons) do
-            if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
-                if button.f then
-                    button.f()
-                end
-                lastPressed = ticks
-                break
-            end
-        end
-    end
-
     --#region Beacon Trilateration
     if SelfIsSelected then
+
+        if isDepressed and ticks - lastPressed > 10 then
+            for _, button in ipairs(buttons) do
+                if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
+                    if button.f then
+                        button.f()
+                    end
+                    lastPressed = ticks
+                    break
+                end
+            end
+        end
+
+        if centerOnGPS then
+            screenCenterX, screenCenterY = gpsX, gpsY
+        end
+
         MapPanSpeed = 100 * zooms[zoom]
         if tlActive then
             if distance(prevBeacon, {x = gpsX, y = gpsY}) > BeaconMinSeperation and tlPulse and beaconDistance > 150 then --add a new beacon if the distance is greater than 100 and a new distance is available
@@ -171,7 +169,7 @@ function onTick()
 
                 if #beacons > 3 then --trilateration only works with 3 or more beacons
                     originGuess = (isNan(mse) or isInf(mse) or not originGuess) and averageCoordinate(beacons) or originGuess
-                    originGuess, mse, numIterations = gradientDescendLoop(TrilaterationRate, TrilaterationThreshold, TrilaterationSteps, beacons, originGuess)
+                    originGuess, mse, numIterations = gradientDescendLoop(0.01, 5, 500, beacons, originGuess)
                 end
             end
         end
@@ -234,7 +232,7 @@ end
 --DONE: Draw latest beacon circle (V)
 --DONE: Implement CHDarkmode as darkmode for the map and the buttons (V)
 
---TODO: Draw the AP output (I)
+--DONT: Draw the AP output (I)
 --DONT: Draw beacons with descending opacity based on age (II)
 --TODO: Draw map zoom setting when changing / always visible (III)
 --DONE: Draw the current estimated position as text when available (III) 
