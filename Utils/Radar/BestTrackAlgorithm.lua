@@ -112,9 +112,9 @@ function bestTrackAlgorithm(contacts, tracks, maxDistance)
 
                 --update the track accordingly
                 table.insert(bestTrack.coordinates, contacts[i])
-                bestTrack.tSinceUpdate = 0
                 bestTrack:calcAngle()
                 bestTrack:calcSpeed()
+                bestTrack.tSinceUpdate = 0 -- fuck this error
 
                 --remove the contact from the contacts array as it has been assigned to a track
                 table.remove(contacts, i)

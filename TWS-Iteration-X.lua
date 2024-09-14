@@ -125,6 +125,26 @@ function onTick()
     end
 end
 
+--Its 23:50... I'm tired
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+--I will finish this tomorrow
+
+--TODO: Fix the speed and angle calculation FYI: the the ticks since update is working fine but either distance or calc is not working! Good luck!
+
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
     i = 0
@@ -137,9 +157,11 @@ function onDraw()
         screen.drawLine(px - 2, py + 1, px - 2, py)
         screen.drawLine(px + 2, py + 1, px + 2, py)
         setSignalColor(CHDarkmode)
+        screen.setColor(255, 255, 255)
         bigR = track.speed * 3600 --1 pixel per kph I think because speed is in tps -> mps (*60) -> kph (*60)
         mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
+        screen.drawText(px, py, track.tSinceUpdate)
         i = i + 1
     end
 
