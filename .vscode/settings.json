@@ -51,5 +51,8 @@
         }
     ],
     "lifeboatapi.stormworks.user.authorName": "Chromatischer",
-    "lifeboatapi.stormworks.minimizer.forceBoilerplate": false
+    "lifeboatapi.stormworks.minimizer.forceBoilerplate": false,
+    "Lua.diagnostics.unusedLocalExclude": [
+        "_build"
+    ]
 }

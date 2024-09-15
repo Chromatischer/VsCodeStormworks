@@ -108,7 +108,7 @@ function onTick()
                 end
             end
 
-            tracks, contacts = bestTrackAlgorithm(contacts, tracks, trackMaxGroupDistance) --Step II: update tracks
+            tracks, contacts = bestTrackDoubleAssignements(contacts, tracks, trackMaxGroupDistance) --Step II: update tracks
 
             for i = #contacts, 1, -1 do                                                    --Step III: make new tracks from remaining contacts and remove them from the contacts table
                 table.insert(tracks, Track(contacts[i]))
@@ -132,8 +132,8 @@ end
 --I will finish this tomorrow
 --I will finish this tomorrow
 
---TODO: Fix the speed and angle calculation FYI: the the ticks since update is working fine but either distance or calc is not working! Good luck!
---TODO: Maybe allow double track for very small distance? like < 10m
+--DONE: Fix the speed and angle calculation FYI: the the ticks since update is working fine but either distance or calc is not working! Good luck!
+--DONE: Maybe allow double track for very small distance? like < 10m
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
@@ -149,15 +149,13 @@ function onDraw()
         screen.drawLine(px + 2, py + 1, px + 2, py)
         setSignalColor(CHDarkmode)
         screen.setColor(255, 255, 255)
-        bigR = track.speed * 3600 --1 pixel per kph I think because speed is in tps -> mps (*60) -> kph (*60)
+        bigR = track.speed * 20
         mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
-        -- There is no more NIL error :D... now that that is solved
-        -- TODO: find out why the speed is not working
-        -- So... now the speed is no longer 0 but INF
-        -- Because the distance is working fine the problem has to be in the angle calculation
+        -- The speed was broken because somehow the same track was updated twice, which set the tSinceUpdate to 0 and the speed to infinity
         screen.drawText(px, py - 4, track.speed)
         screen.drawText(px, py + 4, track.tSinceUpdate)
+        screen.drawText(px - 8, py, track.updates)
         i = i + 1
     end
 

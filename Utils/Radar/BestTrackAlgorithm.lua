@@ -41,11 +41,13 @@ function Track(coordinate)
         tSinceUpdate = 0, ---@type number Time since the last update to the Track in ticks
         angle = 0, ---@type number Angle of travel in radians
         speed = 0, ---@type number Meters per tick
+        updates = 0,
 
         ---Calculates the angle of the track in radians
         ---@param self Track Track object
         calcAngle = function (self)
-            self.angle = math.sin((self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y) / self:getLatestDistance2D())
+            --DONE: This angle is 90 deg off in the anti clockwise direction! I don't know why but this should be fixed at some point in time!
+            self.angle = math.atan(self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y, self.coordinates[#self.coordinates].x - self.coordinates[#self.coordinates - 1].x) + math.pi / 2
         end,
 
         ---Calculates the speed of the track in m/tick
@@ -53,8 +55,8 @@ function Track(coordinate)
         calcSpeed = function (self)
             --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
             -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
-            if self.tSinceUpdate == 0 then
-                self.speed = -9e4
+            if self.tSinceUpdate == 1 then
+                self.speed = 9e4
             else
                 self.speed = self:getLatestDistance() / self.tSinceUpdate --m/tick
             end
@@ -101,6 +103,10 @@ function Track(coordinate)
         getLatestDistance2D = function (self)
             return #self.coordinates > 1 and distance2D(self.coordinates[#self.coordinates - 1], self:getLatest()) or 0
         end,
+
+        resetTimeSinceUpdate = function (self)
+            self.tSinceUpdate = 0
+        end
 
         --Commented out because it is only for debugging and will increase compile size
         --checkNil = function (self)
@@ -152,13 +158,15 @@ function bestTrackAlgorithm(contacts, tracks, maxDistance)
         minDistance = math.huge
         for j = 1, #tracks do --iterate through the track array to find the best track for the current contact
             if usedTracks[j] ~= true then --check if the track has been used previously to avoid double assignment
-                dst = distance3D(contacts[i], tracks[j].coordinates[#tracks[j].coordinates]) --calculate the distance between the contact and the track
+                dst = distance3D(contacts[i], tracks[j]:getLatest()) --calculate the distance between the contact and the track
                 distanceArray[i][j] = dst
                 if dst < minDistance then
                     minDistance = dst
                     bestTrackArray[i] = j --assign the index of the best track to the bestTrackArray at the index of the current contact
+                    usedTracks[j] = true -- Do not allow double assignment
                 end
             end
+            tracks[j].updates = 0
         end
         if bestTrackArray[i] ~= nil then --check if a best track has been found for the current contact
             if distanceArray[i][bestTrackArray[i]] < maxDistance then --check if the distance between the contact and the best track is less than the maximum distance
@@ -166,15 +174,63 @@ function bestTrackAlgorithm(contacts, tracks, maxDistance)
 
                 --update the track accordingly
                 table.insert(bestTrack.coordinates, contacts[i])
-                bestTrack:calcAngle()
-                bestTrack:calcSpeed()
-                bestTrack.tSinceUpdate = 0 -- fuck this error
+                if bestTrack.tSinceUpdate ~= 0 then
+                    bestTrack:calcAngle()
+                    bestTrack:calcSpeed()
+                end
+                bestTrack.updates = bestTrack.updates + 1
+                bestTrack:resetTimeSinceUpdate() --maybe this will solve the problem
+                --bestTrack.tSinceUpdate = 1 -- This line influences the line before it... IDK why or how but it does
 
                 --remove the contact from the contacts array as it has been assigned to a track
                 table.remove(contacts, i)
             end
         end
     end
+    return tracks, contacts --returns the updated tracks and the remaining contacts
+end
+---@endsection
+
+---Assings multiple contacts to a single track but only one track to any single contact
+---@param contacts table<table<x, y, z>> Table of contacts
+---@param tracks table<Track> Table of tracks
+---@param maxDistance number Maximum distance between a contact and a track
+---@return table<Track> Tracks Updated tracks
+---@return table<table<x, y, z>> Contacts Remaining contacts
+---@section bestTrackDoubleAssignements
+function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
+    --So the problem is, that as of now, every contact can have exactly one track but tries to assign to multiple tracks.
+    --It should be, that every track can have multiple contacts but every contact can only have one track.
+    --This is achieved by changing the order of the for loops, so that first the tracks are iterated over and then the contacts.
+    --This way, once the contacts are deleted, they are deleted from the rest of the array too, so that they can't be assigned to multiple tracks.
+
+    --Simple explaination: imagine a 2D grid of distance, where the rows are the tracks and the columns are the contacts.
+    --The value of every cell is the distance between the track and the contact.
+    --The algorithm now iterates top to bottom and right to left, calculating the distance between the track and the contact.
+    --If this distance is smaller then the maximum, the contact is assigned to the track and removed from the contacts array.
+    --This means that for the next iteration, there will be fewer cells in the grid.
+    --In the end, each contact can only have one track and each track can have an unlimited number of contacts.
+    --Finally the tracks are updated and the remaining contacts are returned to be added as new tracks.
+    for i, track in ipairs(tracks) do
+        isUpdated = false
+        for j = #contacts, 1, -1 do
+            contact = contacts[j] ---@type table<x, y, z>
+            dst = distance3D(contact, track:getLatest()) --calculate the distance between the contact and the track
+            if dst < maxDistance then --check if the distance between the contact and the best track is less than the maximum distance
+                table.insert(track.coordinates, contact)
+                isUpdated = true
+
+                --remove the contact from the contacts array as it has been assigned to a track
+                table.remove(contacts, j)
+            end
+        end
+        if isUpdated then
+            track:calcAngle()
+            track:calcSpeed()
+            track:resetTimeSinceUpdate() --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
+        end
+    end
+
     return tracks, contacts --returns the updated tracks and the remaining contacts
 end
 ---@endsection
