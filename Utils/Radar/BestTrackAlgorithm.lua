@@ -21,37 +21,91 @@ end
 
 ---Track object with coordinates, time since the last update, angle and speed
 ---@class Track Track object
+---@field coordinates [table<x, y, z>] table of coordinates (3D space)
+---@field tSinceUpdate number Time since the last update in Ticks
+---@field angle number Angle in radians
+---@field speed number Meters per tick
+---@field calcAngle function Calculate the angle of the track
+---@field calcSpeed function Calculate the speed of the track
+---@field getLatest function Get the latest coordinate of the track
+---@field update function Add 1 tick to the tSinceUpdate variable
+---@field calcEstimatePosition function Calculate the estimated position of the track
+---@field getLatestDistance function Get the distance between the latest two coordinates of the track in 3D space
+---@field getLatestDistance2D function Get the distance between the latest two coordinates of the track in 2D space
 ---@param coordinate table<x, y, z> Coordinate of the first point
 ---@return Track Track new track object at the given coordinate
 ---@section Track
 function Track(coordinate)
     return {
-        coordinates = {coordinate}, --table of coordinates (3D space) ---@type table<table<x, y, z>>
-        tSinceUpdate = 0, --time in ticks
-        angle = 0, --in radians
+        coordinates = {coordinate}, ---@type [table<x, y, z>] table of coordinates (3D space) 
+        tSinceUpdate = 0, ---@type number Time since the last update to the Track in ticks
+        angle = 0, ---@type number Angle of travel in radians
         speed = 0, ---@type number Meters per tick
+
+        ---Calculates the angle of the track in radians
+        ---@param self Track Track object
         calcAngle = function (self)
-            angle = math.sin((self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y) / distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]))
+            self.angle = math.sin((self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y) / self:getLatestDistance2D())
         end,
+
+        ---Calculates the speed of the track in m/tick
+        ---@param self Track Track object
         calcSpeed = function (self)
-            speed = distance2D(self.coordinates[#self.coordinates], self.coordinates[#self.coordinates - 1]) / self.tSinceUpdate --m/tick
+            --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
+            -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
+            if self.tSinceUpdate == 0 then
+                self.speed = -9e4
+            else
+                self.speed = self:getLatestDistance() / self.tSinceUpdate --m/tick
+            end
         end,
+
         --tostring = function (self)
         --    return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
         --end,
+
+        ---Returns the last coordinate that was saved to the Track
+        ---@param self Track Track object
+        ---@return table<x, y, z> Coordinate of the last point
         getLatest = function (self)
             return self.coordinates[#self.coordinates]
         end,
+
+        ---Adds 1 tick to the tSinceUpdate variable
+        ---@param self Track Track object
         update = function (self)
             self.tSinceUpdate = self.tSinceUpdate + 1
         end,
+
+        ---Calculates the estimated position of the track
+        ---@param self Track Track object
+        ---@return table<x, y, z> Estimated position of the track at the current point of time
         calcEstimatePosition = function (self)
             return {
                 x = self.coordinates[#self.coordinates].x + self.speed * math.cos(self.angle) * self.tSinceUpdate,
                 y = self.coordinates[#self.coordinates].y + self.speed * math.sin(self.angle) * self.tSinceUpdate,
                 z = self.coordinates[#self.coordinates].z
             }
-        end
+        end,
+
+        ---Returns the distance between the latest two coordinates of the track in 3D space
+        ---@param self Track Track object
+        ---@return number Distance between the latest two coordinates of the track in 3D space
+        getLatestDistance = function (self)
+            return #self.coordinates > 1 and distance3D(self.coordinates[#self.coordinates - 1], self:getLatest()) or 0
+        end,
+
+        ---Returns the distance between the latest two coordinates of the track in 2D space
+        ---@param self Track Track object
+        ---@return number Distance between the latest two coordinates of the track in 2D space
+        getLatestDistance2D = function (self)
+            return #self.coordinates > 1 and distance2D(self.coordinates[#self.coordinates - 1], self:getLatest()) or 0
+        end,
+
+        --Commented out because it is only for debugging and will increase compile size
+        --checkNil = function (self)
+        --    return self:getLatest() == nil
+        --end
     }
 end
 ---@endsection
@@ -108,7 +162,7 @@ function bestTrackAlgorithm(contacts, tracks, maxDistance)
         end
         if bestTrackArray[i] ~= nil then --check if a best track has been found for the current contact
             if distanceArray[i][bestTrackArray[i]] < maxDistance then --check if the distance between the contact and the best track is less than the maximum distance
-                bestTrack = tracks[bestTrackArray[i]]
+                bestTrack = tracks[bestTrackArray[i]] ---@class Track
 
                 --update the track accordingly
                 table.insert(bestTrack.coordinates, contacts[i])

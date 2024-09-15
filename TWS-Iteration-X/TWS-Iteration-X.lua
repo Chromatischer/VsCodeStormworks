@@ -91,7 +91,9 @@ function onTick()
             distance = input.getNumber(i * 3 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
                 --adds the contacts to the contacts table in the form of x, y, z coordinates
-                table.insert(contacts, radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
+                table.insert(contacts,
+                    radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13))
+                )
             end
         end
 
@@ -126,29 +128,18 @@ function onTick()
 end
 
 --Its 23:50... I'm tired
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
+--Today is yesterday's tomorrow
 --I will finish this tomorrow
 --I will finish this tomorrow
 
 --TODO: Fix the speed and angle calculation FYI: the the ticks since update is working fine but either distance or calc is not working! Good luck!
+--TODO: Maybe allow double track for very small distance? like < 10m
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
     i = 0
     for _, track in ipairs(tracks) do
+        track = track ---@type Track
         --screen.setColor(255, 255, 255, 20)
         --screen.drawText(2, 2 + i * 7, " X:" .. numToFormattedInt(track:getLatest().x, 4) .. " Y:" .. numToFormattedInt(track:getLatest().y, 4))
         setSignalColor(CHDarkmode)
@@ -161,7 +152,12 @@ function onDraw()
         bigR = track.speed * 3600 --1 pixel per kph I think because speed is in tps -> mps (*60) -> kph (*60)
         mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
-        screen.drawText(px, py, track.tSinceUpdate)
+        -- There is no more NIL error :D... now that that is solved
+        -- TODO: find out why the speed is not working
+        -- So... now the speed is no longer 0 but INF
+        -- Because the distance is working fine the problem has to be in the angle calculation
+        screen.drawText(px, py - 4, track.speed)
+        screen.drawText(px, py + 4, track.tSinceUpdate)
         i = i + 1
     end
 
