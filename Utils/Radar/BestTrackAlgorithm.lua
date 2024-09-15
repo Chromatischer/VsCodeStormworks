@@ -1,3 +1,6 @@
+---@diagnostic disable: duplicate-doc-field
+
+
 ---Distance between point A and point B in 2D space
 ---@param coordinateA table<x, y> Coordinate A
 ---@param coordinateB table<x, y> Coordinate B
@@ -30,8 +33,10 @@ end
 ---@field getLatest function Get the latest coordinate of the track
 ---@field update function Add 1 tick to the tSinceUpdate variable
 ---@field calcEstimatePosition function Calculate the estimated position of the track
----@field getLatestDistance function Get the distance between the latest two coordinates of the track in 3D space
----@field getLatestDistance2D function Get the distance between the latest two coordinates of the track in 2D space
+---@field getDistanceSinceUpdate function Get the distance since the last update
+---@field private lastUpdateIndex number Index of coordinate of the last update
+---@field getUpdatePos function Returns the last update position
+---@field dataUpdate function Resets the time since the last update and sets the lastUpdateIndex to the last coordinate
 ---@param coordinate table<x, y, z> Coordinate of the first point
 ---@return Track Track new track object at the given coordinate
 ---@section Track
@@ -42,24 +47,22 @@ function Track(coordinate)
         angle = 0, ---@type number Angle of travel in radians
         speed = 0, ---@type number Meters per tick
         updates = 0,
+        lastUpdateIndex = 1,
 
         ---Calculates the angle of the track in radians
         ---@param self Track Track object
         calcAngle = function (self)
             --DONE: This angle is 90 deg off in the anti clockwise direction! I don't know why but this should be fixed at some point in time!
-            self.angle = math.atan(self.coordinates[#self.coordinates].y - self.coordinates[#self.coordinates - 1].y, self.coordinates[#self.coordinates].x - self.coordinates[#self.coordinates - 1].x) + math.pi / 2
+            self.angle = math.atan(self:getLatest().y - self:getUpdatePos().y, self:getLatest().x - self:getUpdatePos().x) + math.pi / 2
         end,
 
         ---Calculates the speed of the track in m/tick
         ---@param self Track Track object
         calcSpeed = function (self)
+            --DONE: The speed is off by about a factor of 4
             --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
             -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
-            if self.tSinceUpdate == 1 then
-                self.speed = 9e4
-            else
-                self.speed = self:getLatestDistance() / self.tSinceUpdate --m/tick
-            end
+            self.speed = self:getDistanceSinceUpdate() / self.tSinceUpdate --m/tick
         end,
 
         --tostring = function (self)
@@ -84,28 +87,22 @@ function Track(coordinate)
         ---@return table<x, y, z> Estimated position of the track at the current point of time
         calcEstimatePosition = function (self)
             return {
-                x = self.coordinates[#self.coordinates].x + self.speed * math.cos(self.angle) * self.tSinceUpdate,
-                y = self.coordinates[#self.coordinates].y + self.speed * math.sin(self.angle) * self.tSinceUpdate,
-                z = self.coordinates[#self.coordinates].z
+                x = self:getLatest().x + (self.speed * self.tSinceUpdate) * math.sin(self.angle),
+                y = self:getLatest().y + (self.speed * self.tSinceUpdate) * math.cos(self.angle),
             }
         end,
 
-        ---Returns the distance between the latest two coordinates of the track in 3D space
-        ---@param self Track Track object
-        ---@return number Distance between the latest two coordinates of the track in 3D space
-        getLatestDistance = function (self)
-            return #self.coordinates > 1 and distance3D(self.coordinates[#self.coordinates - 1], self:getLatest()) or 0
-        end,
-
-        ---Returns the distance between the latest two coordinates of the track in 2D space
-        ---@param self Track Track object
-        ---@return number Distance between the latest two coordinates of the track in 2D space
-        getLatestDistance2D = function (self)
-            return #self.coordinates > 1 and distance2D(self.coordinates[#self.coordinates - 1], self:getLatest()) or 0
-        end,
-
-        resetTimeSinceUpdate = function (self)
+        dataUpdate = function (self)
             self.tSinceUpdate = 0
+            self.lastUpdateIndex = #self.coordinates
+        end,
+
+        getDistanceSinceUpdate = function (self)
+            return distance3D(self.coordinates[self.lastUpdateIndex], self:getLatest()) --fixes the problem with the speed being off by a factor of 4 because of the wrong coordinate being used
+        end,
+
+        getUpdatePos = function (self)
+            return self.coordinates[self.lastUpdateIndex]
         end
 
         --Commented out because it is only for debugging and will increase compile size
@@ -211,7 +208,8 @@ function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
     --This means that for the next iteration, there will be fewer cells in the grid.
     --In the end, each contact can only have one track and each track can have an unlimited number of contacts.
     --Finally the tracks are updated and the remaining contacts are returned to be added as new tracks.
-    for i, track in ipairs(tracks) do
+    for i = 1, #tracks do
+        track = tracks[i] ---@type Track
         isUpdated = false
         for j = #contacts, 1, -1 do
             contact = contacts[j] ---@type table<x, y, z>
@@ -227,7 +225,7 @@ function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
         if isUpdated then
             track:calcAngle()
             track:calcSpeed()
-            track:resetTimeSinceUpdate() --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
+            track:dataUpdate() --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
         end
     end
 

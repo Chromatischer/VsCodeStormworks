@@ -91,6 +91,7 @@ function onTick()
             distance = input.getNumber(i * 3 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
                 --adds the contacts to the contacts table in the form of x, y, z coordinates
+                --TODO: add pre evaluation smoothing using TimeSinceDetected?
                 table.insert(contacts,
                     radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13))
                 )
@@ -100,7 +101,8 @@ function onTick()
         radarIsContinousRotation = property.getBool("Radar Mode: ")
         --Right now I will not do pre-target smoothing using the time since detected... I will use the plain position, but this will be an option in the future
         --This checks if either the radar has done a full rotation, or if the radar has changed direction, so has hit one of its limits and is now moving the other way
-        if (not (lastRadarDelta > 0 and radarMovingPositive) and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
+        --TODO: When updating, the data gets messed up when on the edge of the detection
+        if (radarRotation % 180 < 3 and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
             reachedLimit = true
             for i = #tracks, 1, -1 do                                                           --Step I: delete dead tracks
                 if tracks[i].tSinceUpdate > trackMaxUpdateTicks then
@@ -115,6 +117,7 @@ function onTick()
                 table.remove(contacts, i)
             end
         end
+
         --#region Radar movement direction
         lastRadarDelta = radarRotation - lastRadarRotation
         lastRadarRotation = radarRotation
@@ -127,21 +130,12 @@ function onTick()
     end
 end
 
---Its 23:50... I'm tired
---Today is yesterday's tomorrow
---I will finish this tomorrow
---I will finish this tomorrow
-
---DONE: Fix the speed and angle calculation FYI: the the ticks since update is working fine but either distance or calc is not working! Good luck!
---DONE: Maybe allow double track for very small distance? like < 10m
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
     i = 0
     for _, track in ipairs(tracks) do
         track = track ---@type Track
-        --screen.setColor(255, 255, 255, 20)
-        --screen.drawText(2, 2 + i * 7, " X:" .. numToFormattedInt(track:getLatest().x, 4) .. " Y:" .. numToFormattedInt(track:getLatest().y, 4))
         setSignalColor(CHDarkmode)
         px, py = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, track:getLatest().x, track:getLatest().y)
         screen.drawLine(px - 2, py, px + 2, py)
@@ -153,9 +147,12 @@ function onDraw()
         mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
         -- The speed was broken because somehow the same track was updated twice, which set the tSinceUpdate to 0 and the speed to infinity
-        screen.drawText(px, py - 4, track.speed)
-        screen.drawText(px, py + 4, track.tSinceUpdate)
-        screen.drawText(px - 8, py, track.updates)
+        screen.drawText(px, py, numToFormattedInt(track.speed * 60, 2))
+        --screen.drawText(px, py + 4, track.tSinceUpdate)
+        estX, estY = track:calcEstimatePosition()
+        seX, seY = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, estX, estY)
+        screen.setColor(0, 255, 0)
+        screen.drawRectF(seX, seY, 2, 2) --TODO: This does not draw any rectangle!
         i = i + 1
     end
 
