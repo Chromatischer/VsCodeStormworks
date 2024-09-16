@@ -53,6 +53,7 @@ lastRadarDelta = 0
 radarMovingPositive = true
 tracks = {} ---@type table<Track> Tracks
 contacts = {} ---@type table<x, y, z> Contacts
+rawRadarData = {{}, {}, {}} ---@type table<table<table<x, y, z>>> Raw Radar Data
 SelfIsSelected = false
 reachedLimit = false
 screenCenterX = 0
@@ -88,13 +89,27 @@ function onTick()
         dataOffset = 11
         boolOffset = 4
         for i = 0, 2 do
-            distance = input.getNumber(i * 3 + dataOffset)
+            distance = input.getNumber(i * 4 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
-                --adds the contacts to the contacts table in the form of x, y, z coordinates
-                --TODO: add pre evaluation smoothing using TimeSinceDetected?
-                table.insert(contacts,
-                    radarToGlobalCoordinates(distance, input.getNumber(i * 3 + 1 + dataOffset), input.getNumber(i * 3 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13))
-                )
+                --DONE: add pre evaluation smoothing using TimeSinceDetected
+                --This works good! The data is being smoothed really nicely
+                --TODO: find out, why there are ghost targets apearing betweeen the actual target and the radar itself
+                --These ghost targets are in one line with the radar and the actual target
+                --They are mirroring the speed, as well as angle of the actual target, though the speed is half of that of the actual target
+                --I can imagine this phenomenon is caused by the averaging, though I am unsure of how I can fix this!
+                if input.getNumber(i * 4 + 3 + dataOffset) ~= 0 then --while Time Since Detected is not 0 the coordinates are added to a temporary table
+                    table.insert(rawRadarData[i + 1], radarToGlobalCoordinates(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
+                else --If Time Since Detected is 0, the values are averaged and added to the contacts table
+                    sumX, sumY, sumZ = 0, 0, 0
+                    for _, raw in ipairs(rawRadarData[i + 1]) do
+                        sumX = sumX + raw.x
+                        sumY = sumY + raw.y
+                        sumZ = sumZ + raw.z
+                    end
+
+                    table.insert(contacts, {x = sumX / #rawRadarData[i + 1], y = sumY / #rawRadarData[i + 1], z = sumZ / #rawRadarData[i + 1]})
+                    rawRadarData[i + 1] = {}
+                end
             end
         end
 
@@ -149,10 +164,10 @@ function onDraw()
         -- The speed was broken because somehow the same track was updated twice, which set the tSinceUpdate to 0 and the speed to infinity
         screen.drawText(px, py, numToFormattedInt(track.speed * 60, 2))
         --screen.drawText(px, py + 4, track.tSinceUpdate)
-        estX, estY = track:calcEstimatePosition()
-        seX, seY = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, estX, estY)
+        estPos = track:calcEstimatePosition()
+        seX, seY = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, estPos.x, estPos.y)
         screen.setColor(0, 255, 0)
-        screen.drawRectF(seX, seY, 2, 2) --TODO: This does not draw any rectangle!
+        screen.drawRectF(seX, seY, 2, 2)
         i = i + 1
     end
 
