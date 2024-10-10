@@ -1,9 +1,11 @@
-
+---**Use Trilateration instead, this is the wrong way to find the intersection points of circles**
+---
 ---Finds the intersection points of two circles, if they intersect at all and returns them as a table
 ---@param circle1 table<x, y, r> The first circle to find the intersection points of (Table with x, y and radius r)
 ---@param circle2 table<x, y, r> The second circle to find the intersection points of (Table with x, y and radius r)
 ---@return table<x1, y1, x2, y2> ?table The intersection points of the two circles
 ---@return nil ?nil If the circles do not intersect
+---@deprecated
 ---@section circleIntersection
 function circleIntersection(circle1, circle2)
     x1 = circle1.x
@@ -41,6 +43,8 @@ function circleIntersection(circle1, circle2)
 end
 ---@endsection
 
+---**Use Trilateration instead, this is the wrong way to find the intersection points of circles**
+---
 ---Idea for finding the best intersection point:
 ---1. Find the intersection points of all circles
 ---2. Make an array of the distance from every intersection point to every other intersection point
@@ -50,6 +54,7 @@ end
 ---@return table<x, y> coordinate best intersection point
 ---@return number distance Best distance to all other intersection points
 ---@return number number Number of calculations
+---@deprecated
 ---@section findBestIntersectionPoint
 function findBestIntersectionPoint(intersections)
     bestIntersection = {}

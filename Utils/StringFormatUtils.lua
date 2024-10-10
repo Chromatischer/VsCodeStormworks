@@ -1,4 +1,3 @@
-
 ---floors the number then formats it using the specified length and returns the resulting string!
 ---@param number number the number to be formatted
 ---@param length number number of characters to return with

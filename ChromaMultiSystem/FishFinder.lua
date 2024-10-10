@@ -5,14 +5,6 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
-
---[====[ HOTKEYS ]====]
--- Press F6 to simulate this file
--- Press F7 to build the project, copy the output from /_build/out/ into the game to use
--- Remember to set your Author name etc. in the settings: CTRL+COMMA
-
-
---[====[ EDITABLE SIMULATOR CONFIG - *automatically removed from the F7 build output ]====]
 ---@section __LB_SIMULATOR_ONLY__
 do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
@@ -27,33 +19,88 @@ do
 
         -- touchscreen defaults
         local screenConnection = simulator:getTouchScreen(1)
-        simulator:setInputBool(1, screenConnection.isTouched)
-        simulator:setInputNumber(1, screenConnection.width)
-        simulator:setInputNumber(2, screenConnection.height)
-        simulator:setInputNumber(3, screenConnection.touchX)
-        simulator:setInputNumber(4, screenConnection.touchY)
-
-        -- NEW! button/slider options from the UI
-        simulator:setInputBool(31, simulator:getIsClicked(1))       -- if button 1 is clicked, provide an ON pulse for input.getBool(31)
-        simulator:setInputNumber(31, simulator:getSlider(1))        -- set input 31 to the value of slider 1
-
-        simulator:setInputBool(32, simulator:getIsToggled(2))       -- make button 2 a toggle, for input.getBool(32)
-        simulator:setInputNumber(32, simulator:getSlider(2) * 50)   -- set input 32 to the value from slider 2 * 50
     end;
 end
 ---@endsection
 
+--#region CH Layout
+-- CH1: Global Scale
+-- CH2: GPS X
+-- CH3: GPS Y
+-- CH4: GPS Z
+-- CH5: Vessel Angle
+-- CH6: Screen Select I
+-- CH7: Screen Select II
+-- CH8: Touch X I
+-- CH9: Touch Y I
+-- CH10: Touch X II
+-- CH11: Touch Y II
 
---[====[ IN-GAME CODE ]====]
+-- CHB1: Global Darkmode
+-- CHB2: Touch I
+-- CHB3: Touch II
+--#endregion
 
--- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
--- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
+--#region Fish Finder Layout
+-- CH12: Local Relative Yaw to Fish in turns
+-- CH13: Local Relative Distance to Fish in meters (max distance 100m)
+-- CH14: Local Relative Depth to Fish in meters
+
+--CHB4: Fish Finder Active
+--#endregion
+
+zoom = 5
+zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
+allFish = {} ---@type table<Fish>
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
+    CHGlobalScale = input.getNumber(1)
+    gpsX = input.getNumber(2)
+    gpsY = input.getNumber(3)
+    gpsZ = input.getNumber(4)
+    compas = input.getNumber(5)
+    vesselAngle = (compas * 360) + 180
+    CHSel1 = input.getNumber(6)
+    CHSel2 = input.getNumber(7)
+    touchX = CHSel1 == selfID and input.getNumber(8) or input.getNumber(10)
+    touchY = CHSel1 == selfID and input.getNumber(9) or input.getNumber(11)
+
+    CHDarkmode = input.getBool(1)
+    isDepressed = CHSel1 == selfID and input.getBool(2) or input.getBool(3)
+    SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
+    selfID = property.getNumber("SelfID")
+
+    if input.getBool(4) then
+        fish = newFish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
+        table.insert(allFish, fish)
+        for i = #allFish, 1, -1 do
+            fish = allFish[i] ---@type Fish
+            fish:update()
+            if fish:isDead() then -- Oh no, the fish is dead!
+                table.remove(allFish, i)
+            end
+        end
+    end
+
+    if isUsingCHZoom then
+        zoom = math.clamp(CHGlobalScale, 1, 21)
+    end
+    if CHGlobalScale ~= lastGlobalScale then
+        isUsingCHZoom = true
+    end
+    lastGlobalScale = CHGlobalScale
+
+    --#region Setting values on Boot
+    if ticks < 10 then
+        screenCenterX, screenCenterY = gpsX, gpsY
+        lastGlobalScale = CHGlobalScale
+    end
+    --#endregion
 end
 
 function onDraw()
-    screen.drawCircle(16,16,5)
+    Swidth, Sheight = screen.getWidth(), screen.getHeight()
+    
 end
