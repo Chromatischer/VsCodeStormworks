@@ -9,13 +9,9 @@
 ---@field convertToHsv function convert the current RGB color to HSV color
 ---@field convertToRGB function convert the current HSV color to RGB color
 ---@field getRGB function get the RGB values of the color
----@field getHSV function get the HSV values of the color
----@field isRGB function check if the color is in RGB state
----@field isHSV function check if the color is in HSV state
 ---@field setRGB function set the RGB values of the color
 ---@field setHSV function set the HSV values of the color
 ---@field genNewHue function generate a new hue for the color
----@field modifyValue function modify the value of the color
 ---@field getWithModifiedValue function returns a new color object with the modified value
 ---@field setAsScreenColor function set the color as the screen color (RGB)
 ---@field getWithModifiedHue function returns a new color object with the modified hue
@@ -97,30 +93,6 @@ function color(r, g, b, h, s, v)
             return {r = self.r, g = self.g, b = self.b}
         end,
 
-        ---Get the HSV values of the color
-        ---@param self Color the color object
-        ---@return table HSV the HSV values of the color
-        getHSV = function (self)
-            if self.state == 1 then
-                self:convertToHsv()
-            end
-            return {h = self.h, s = self.s, v = self.v}
-        end,
-
-        ---Check if the color is in RGB state
-        ---@param self Color the color object
-        ---@return boolean boolean True if the color is in RGB state
-        isRGB = function (self)
-            return self.state == 1
-        end,
-
-        ---Check if the color is in HSV state
-        ---@param self Color the color object
-        ---@return boolean boolean True if the color is in HSV state
-        isHSV = function (self)
-            return self.state == 0
-        end,
-
         ---Set the RGB values of the color
         ---@param self Color the color object
         ---@param r number the red of the color
@@ -151,13 +123,6 @@ function color(r, g, b, h, s, v)
             self.h = math.random()
         end,
 
-        ---Modify the value of the color
-        ---@param self Color the color object
-        ---@param offset number the offset to modify the value by
-        modifyValue = function (self, offset)
-            self.v = self.v + offset
-        end,
-
         ---Get a new color object with the modified value
         ---@param self Color the color object
         ---@param offset number the offset to modify the value by
@@ -174,6 +139,7 @@ function color(r, g, b, h, s, v)
         setAsScreenColor = function (self)
             if self.state == 0 then
                 self:convertToRGB()
+                self.state = 0 --reset state to HSV after conversion because setting it should not change the state
             end
             screen.setColor(self.r, self.g, self.b)
         end,

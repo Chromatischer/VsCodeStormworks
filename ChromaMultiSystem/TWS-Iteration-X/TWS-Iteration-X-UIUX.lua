@@ -100,6 +100,7 @@ function onTick()
     isDepressed = CHSel1 == selfID and input.getBool(2) or input.getBool(3)
     SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
     selfID = property.getNumber("SelfID")
+    maxRadarRange = property.getNumber("MaxRadarRange")
 
     output.setNumber(1, gpsX)
     output.setNumber(2, gpsY)
@@ -159,6 +160,17 @@ function onDraw()
     mapGPSX, mapGPSY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, gpsX, gpsY)
     drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
+    --#region Radar range as well as radar look direction indicator
+    rangeRing = maxRadarRange / zooms[zoom] * math.min(Swidth, Sheight)
+
+    setColorGrey(0.3, CHDarkmode)
+    screen.drawCircle(mapGPSX, mapGPSY, rangeRing)
+
+    color2(0.2, 0.6, 0.7, false):setAsScreenColor()
+    px, py = math.sin(radarRotation) * rangeRing + mapGPSX, math.cos(radarRotation) * rangeRing + mapGPSY
+
+    screen.drawLine(mapGPSX, mapGPSY, px, py)
+    --#endregion
 
     for _, button in ipairs(buttons) do
         drawCHButton(button, CHDarkmode, PanCenter)

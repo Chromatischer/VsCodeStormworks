@@ -1,5 +1,3 @@
-require("Utils.Color")
-
 ---@section constants
 SIGNAL_LIGHT = color(10, 50, 10) ---@type Color
 SIGNAL_DARK = color(200, 75, 75) ---@type Color

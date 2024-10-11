@@ -149,7 +149,6 @@ end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    i = 0
     for _, track in ipairs(tracks) do
         track = track ---@type Track
         setSignalColor(CHDarkmode)
@@ -168,6 +167,5 @@ function onDraw()
         seX, seY = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, estPos.x, estPos.y)
         color:getWithModifiedHue(0.5):setAsScreenColor()
         screen.drawLine(px, py, seX, seY) --Draw a line to the estimated position of the target
-        i = i + 1
     end
 end

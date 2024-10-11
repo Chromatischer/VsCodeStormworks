@@ -1,6 +1,3 @@
-require("Utils.VirtualMapUtils")
-require("Utils.Color")
-
 ---Generate a new fish object
 ---@class Fish
 ---@field globalAngle number the global angle of the fish
