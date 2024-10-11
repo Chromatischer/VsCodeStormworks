@@ -52,11 +52,17 @@ end
 require("Utils.Fish")
 require("Utils.VirtualMapUtils")
 require("Utils.Color")
+require("Utils.DrawAddons")
+require("Utils.StringFormatUtils")
 
 zoom = 5
 zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 allFish = {} ---@type table<Fish>
 virtualMap = nil ---@type VirtualMap
+screenCenterX, screenCenterY = 0, 0
+lastGlobalScale = 1
+isUsingCHZoom = false
+selfID = 0
 
 ticks = 0
 function onTick()
@@ -108,8 +114,17 @@ end
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
     virtualMap = virtualMap(screenCenterX, screenCenterY, Swidth, Sheight, zooms[zoom], true)
+
+    onScreenX, onScreenY = virtualMap:toScreenSpace(screenCenterX, screenCenterY, vesselAngle)
+    drawDirectionIndicator(onScreenX, onScreenY, CHDarkmode, vesselAngle)
+
     for _, fish in ipairs(allFish) do
         fish = fish ---@type Fish
         fish:drawSpotToScreen(virtualMap, vesselAngle)
+    end
+
+    if not zoom == CHGlobalScale then
+        setColorGrey(0.7, CHDarkmode)
+        screen.drawText(2, 2, "D: " .. string.formatNumberAsInteger(zooms[zoom], 3, "0"))
     end
 end

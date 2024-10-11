@@ -25,6 +25,7 @@ require("Utils.Color")
 ---@param distance number the distance to the fish (m)
 ---@param depth number the depth of the fish (m)
 ---@return Fish Fish the fish object
+---@section Fish
 function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
     return {
         globalAngle = (compas + yaw) % 360, ---@type number the global angle of the fish
@@ -71,12 +72,15 @@ function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
         ---@param self Fish the fish object
         ---@param virtualMap VirtualMap the virtual map object
         ---@param vesselAngle number the angle of the vessel (deg)
-        drawSpotToScreen = function (self, virtualMap, vesselAngle)
+        drawSpotToScreen = function (self, virtualMap, vesselAngle, isDarkMode)
             screenX, screenY = virtualMap:toScreenSpace(self.globalX, self.globalY, vesselAngle)
-            self.color:setAsScreenColor()
+            self.color:getWithModifiedValue(isDarkMode and -0.3 or 0):setAsScreenColor()
             screen.drawCircleF(screenX, screenY, 6)
-            self.color:getWithModifiedValue(0.5):setAsScreenColor()
+            self.color:getWithModifiedValue(isDarkMode and -0.5 or -0.2):setAsScreenColor()
             screen.drawCircle(screenX, screenY, 6)
+            setColorGrey(0.7, isDarkMode)
+            screen.drawText(screenX - 1, screenY - 1, self.relDepth)
         end
     }
 end
+---@endsection

@@ -18,6 +18,7 @@
 ---@field modifyValue function modify the value of the color
 ---@field getWithModifiedValue function returns a new color object with the modified value
 ---@field setAsScreenColor function set the color as the screen color (RGB)
+---@field getWithModifiedHue function returns a new color object with the modified hue
 ---@param r ?number the red of the color (0-255)
 ---@param g ?number the green of the color (0-255)
 ---@param b ?number the blue of the color (0-255)
@@ -25,6 +26,7 @@
 ---@param s ?number the saturation of the color (0-1)
 ---@param v ?number the value of the color (0-1)
 ---@return Color Color the color object
+---@section Color
 function color(r, g, b, h, s, v)
     return {
         r = r or 0, ---@type number the red of the color
@@ -162,6 +164,7 @@ function color(r, g, b, h, s, v)
         ---@return Color Color the new color object
         getWithModifiedValue = function (self, offset)
             newColor = color(self.r, self.g, self.b)
+            newColor:convertToHsv()
             newColor.v = self.v + offset
             return newColor
         end,
@@ -173,16 +176,29 @@ function color(r, g, b, h, s, v)
                 self:convertToRGB()
             end
             screen.setColor(self.r, self.g, self.b)
+        end,
+
+        ---Get a new color object with the modified hue
+        ---@param self Color the color object
+        ---@param offset number the offset to modify the hue by
+        ---@return Color Color the new color object
+        getWithModifiedHue = function (self, offset)
+            newColor = color(self.r, self.g, self.b)
+            newColor:convertToHsv()
+            newColor.h = self.h + offset % 1 --normalize the hue to 0-1
+            return newColor
         end
     }
 end
+---@endsection
 
 ---Create a new color object with the given values as either RGB or HSV
 ---@param a number the red or hue of the color
----@param b number the green or hue of the color
+---@param b number the green or saturation of the color
 ---@param c number the blue or value of the color
 ---@param setRGB boolean if the values are RGB or HSV
 ---@return Color Color the color object
+---@section color2
 function color2(a, b, c, setRGB)
     if setRGB then
         return color(a, b, c)
@@ -190,3 +206,4 @@ function color2(a, b, c, setRGB)
         return color(nil, nil, nil, a, b, c)
     end
 end
+---@endsection

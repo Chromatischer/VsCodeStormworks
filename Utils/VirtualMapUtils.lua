@@ -14,6 +14,7 @@
 ---@param maxRadius number the maximum radius of the map
 ---@param isDepressed boolean if true, the center of the map is depressed by 1/3 of the screen height (to show more of the front of the vessel)
 ---@return VirtualMap VirtualMap the virtual map object
+---@section VirtualMap
 function virtualMap(centerX, centerY, screenWidth, screenHeight, maxRadius, isDepressed)
     return {
         centerX = centerX, ---@type number the global X center of the map
@@ -40,3 +41,4 @@ function virtualMap(centerX, centerY, screenWidth, screenHeight, maxRadius, isDe
         end,
     }
 end
+---@endsection

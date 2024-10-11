@@ -37,7 +37,7 @@ function averageCoordinate(beacons)
 end
 ---@endsection
 
----Calculat the center of the beacons using a gradient descend loop
+---Calculate the best origin point of the beacons using gradient descend loop
 ---@param learnRate number the amount of change eatch loop (0.1)
 ---@param threshold number stopping threshold (0.0001)
 ---@param max_iterations number maximum iterations (1000)

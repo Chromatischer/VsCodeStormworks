@@ -1,3 +1,10 @@
+require("Utils.Color")
+
+---@section constants
+SIGNAL_LIGHT = color(10, 50, 10) ---@type Color
+SIGNAL_DARK = color(200, 75, 75) ---@type Color
+---@endsection
+
 ---Draws the vessel position and rotation to the screen
 ---@param screenX number the X position on screen to draw the indicator at
 ---@param screenY number the Y position on screen to draw the indicator at
@@ -37,10 +44,10 @@ function drawCHButton(button, isDarkMode, PanCenter)
     if button.c then
         setSignalColor(isDarkMode)
     else
-        setColorGrey(100, isDarkMode)
+        setColorGrey(0.7, isDarkMode)
     end
     screen.drawRectF(button.x + 1, button.y + 1, localWidth - 1, 8 - 1)
-    setColorGrey(15, isDarkMode)
+    setColorGrey(0.1, isDarkMode)
     screen.drawRect(button.x, button.y, localWidth, 8)
     screen.drawText(button.x + 3, button.y + 2, button.t)
 end
@@ -51,8 +58,7 @@ end
 ---@param isDarkMode boolean DarkMode
 ---@section setColorGrey
 function setColorGrey(value, isDarkMode)
-    val = isDarkMode and ((value - 50 > 5) and value - 50 or 5) or value
-    screen.setColor(val, val, val)
+    color2(0, 0, isDarkMode and math.max(value - 0.2, 0.1) or value, false):setAsScreenColor()
 end
 ---@endsection
 
@@ -60,15 +66,11 @@ end
 ---@param isDarkMode boolean DarkMode
 ---@section setSignalColor
 function setSignalColor(isDarkMode)
-    setColorFromTable(isDarkMode and {10, 50, 10} or {200, 75, 75})
-end
----@endsection
-
----Sets the color of the screen to the color given in the table
----@param color table<r, g, b, a> the color to set the screen to
----@section setColorFromTable
-function setColorFromTable(color)
-    screen.setColor(color[1], color[2], color[3], color[4] and color[4] or 255)
+    if isDarkMode then
+        SIGNAL_DARK:setAsScreenColor()
+    else
+        SIGNAL_LIGHT:setAsScreenColor()
+    end
 end
 ---@endsection
 

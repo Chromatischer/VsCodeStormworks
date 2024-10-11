@@ -27,6 +27,7 @@ require("Utils.Utils")
 require("Utils.Radar.BestTrackAlgorithm")
 require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.DrawAddons")
+require("Utils.Color")
 
 --Will use 3 simultaneous contacts for now... so that means: 3 azimuths, 3 elevations, 3 distances, 3 contact statuses
 
@@ -156,24 +157,17 @@ function onDraw()
         screen.drawLine(px - 2, py, px + 2, py)
         screen.drawLine(px - 2, py + 1, px - 2, py)
         screen.drawLine(px + 2, py + 1, px + 2, py)
-        setSignalColor(CHDarkmode)
-        screen.setColor(255, 255, 255)
+        color = CHDarkmode and SIGNAL_DARK or SIGNAL_LIGHT
+        color:getWithModifiedValue(-0.2):setAsScreenColor()
         bigR = track.speed * 20
         mx, my = px + (bigR) * math.sin(track.angle), py + (bigR) * math.cos(track.angle)
         screen.drawLine(px, py, mx, my)
-        -- The speed was broken because somehow the same track was updated twice, which set the tSinceUpdate to 0 and the speed to infinity
-        screen.drawText(px, py, numToFormattedInt(track.speed * 60, 2))
+        --screen.drawText(px, py, numToFormattedInt(track.speed * 60, 2))
         --screen.drawText(px, py + 4, track.tSinceUpdate)
         estPos = track:calcEstimatePosition()
         seX, seY = map.mapToScreen(screenCenterX, screenCenterY, finalZoom, Swidth, Sheight, estPos.x, estPos.y)
-        screen.setColor(0, 255, 0)
-        screen.drawRectF(seX, seY, 2, 2)
+        color:getWithModifiedHue(0.5):setAsScreenColor()
+        screen.drawLine(px, py, seX, seY) --Draw a line to the estimated position of the target
         i = i + 1
-    end
-
-    if reachedLimit then
-        screen.setColor(255, 0, 0, 50)
-        screen.drawRect(0, 0, Swidth, Sheight)
-        reachedLimit = false
     end
 end

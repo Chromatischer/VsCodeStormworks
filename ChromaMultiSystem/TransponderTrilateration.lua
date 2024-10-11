@@ -210,7 +210,7 @@ function onDraw()
             mapOriginX, mapOriginY = map.mapToScreen(screenCenterX, screenCenterY, zooms[zoom], Swidth, Sheight, originGuess.x, originGuess.y)
             screen.drawCircle(mapOriginX, mapOriginY, math.clamp(mse / 2000, 2, 20))
             screen.drawLine(mapGPSX, mapGPSY, mapOriginX, mapOriginY)
-            setColorGrey(255, CHDarkmode)
+            setColorGrey(1, CHDarkmode)
             screen.drawText(2, 2, "X: " .. math.floor(originGuess.x))
             screen.drawText(2, 9, "Y: " .. math.floor(originGuess.y))
         end
@@ -221,7 +221,7 @@ function onDraw()
             drawCHButton(button, CHDarkmode, PanCenter)
         end
 
-        setColorGrey(15, CHDarkmode)
+        setColorGrey(0.1, CHDarkmode)
         screen.drawText(PanCenter.x -18, 18, beaconDistance and beaconDistance > 0 and string.format("%05d", math.floor(math.clamp(beaconDistance, 0, 99999))) or "-----" or "-----")
     end
 end

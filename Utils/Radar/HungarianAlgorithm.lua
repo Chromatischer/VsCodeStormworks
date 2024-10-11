@@ -6,6 +6,7 @@
 ---@param a table the 2D table to get the optimization of
 ---@return table table the optimal arrangement for minimal cost
 ---@section hungarianAlgorithm
+---@deprecated use BestTrack instead because thie is too many tokens for too little use
 function hungarianAlgorithm(a)
     HUGE = 9e3
     m = #a      --rows
