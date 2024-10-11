@@ -49,9 +49,14 @@ end
 --CHB4: Fish Finder Active
 --#endregion
 
+require("Utils.Fish")
+require("Utils.VirtualMapUtils")
+require("Utils.Color")
+
 zoom = 5
 zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 allFish = {} ---@type table<Fish>
+virtualMap = nil ---@type VirtualMap
 
 ticks = 0
 function onTick()
@@ -73,7 +78,7 @@ function onTick()
     selfID = property.getNumber("SelfID")
 
     if input.getBool(4) then
-        fish = newFish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
+        fish = Fish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
         table.insert(allFish, fish)
         for i = #allFish, 1, -1 do
             fish = allFish[i] ---@type Fish
@@ -102,5 +107,9 @@ end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    
+    virtualMap = virtualMap(screenCenterX, screenCenterY, Swidth, Sheight, zooms[zoom], true)
+    for _, fish in ipairs(allFish) do
+        fish = fish ---@type Fish
+        fish:drawSpotToScreen(virtualMap, vesselAngle)
+    end
 end

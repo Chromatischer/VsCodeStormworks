@@ -1,19 +1,22 @@
 require("Utils.VirtualMapUtils")
+require("Utils.Color")
 
 ---Generate a new fish object
 ---@class Fish
----@field globalAngle number the global angle of the fish (deg)
+---@field globalAngle number the global angle of the fish
 ---@field globalX number the global X position of the fish
 ---@field globalY number the global Y position of the fish
 ---@field globalZ number the global Z position of the fish
----@field relDepth number the relative depth of the fish (m)
----@field age number the age of the fish (ticks)
----@field getGlobalPosition function returns the global position of the fish as coordinate object
----@field getGlobalAngle function returns the global angle of the fish (deg)
----@field getGlobalDepth function returns the global depth of the fish (m)
----@field getAge function returns the age of the fish (ticks)
----@field update function updates the fish object
----@field isDead function returns if the fish is dead
+---@field relDepth number the relative depth of the fish
+---@field color Color the color of the fish generated randomly with a set value and saturation
+---@field age number the age of the fish
+---@field getGlobalPosition function the function to get the global position of the fish
+---@field getGlobalAngle function the function to get the global angle of the fish
+---@field getGlobalDepth function the function to get the global depth of the fish
+---@field getAge function the function to get the age of the fish
+---@field update function the function to increase the age of the fish by 1
+---@field isDead function the function to check if the fish is dead
+---@field drawSpotToScreen function the function to draw the fish to the screen
 ---@param gpsX number the GPS X position of the vessel
 ---@param gpsY number the GPS Y position of the vessel
 ---@param gpsZ number the GPS Z position of the vessel
@@ -22,19 +25,15 @@ require("Utils.VirtualMapUtils")
 ---@param distance number the distance to the fish (m)
 ---@param depth number the depth of the fish (m)
 ---@return Fish Fish the fish object
-function newFish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
+function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
     return {
-        globalAngle = (compas + yaw) % 360,
-        globalX = gpsX + (math.sin(globalAngle) * distance),
-        globalY = gpsY + (math.cos(globalAngle) * distance),
-        globalZ = gpsZ - depth,
-        relDepth = depth,
-        color = {0, 0, 0},
-        age = 100,
-
-        generateColor = function()
-            
-        end,
+        globalAngle = (compas + yaw) % 360, ---@type number the global angle of the fish
+        globalX = gpsX + (math.sin(globalAngle) * distance), ---@type number the global X position of the fish
+        globalY = gpsY + (math.cos(globalAngle) * distance), ---@type number the global Y position of the fish
+        globalZ = gpsZ - depth, ---@type number the global Z position of the fish
+        relDepth = depth, ---@type number the relative depth of the fish
+        color = color2(0, 0.5, 0.9, false):genNewHue(), ---@type Color the color of the fish generated randomly with a set value and saturation
+        age = 100, ---@type number the age of the fish
 
         getGlobalPosition = function (self)
             return {x = self.globalX, y = self.globalY, z = self.globalZ}
@@ -73,9 +72,11 @@ function newFish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
         ---@param virtualMap VirtualMap the virtual map object
         ---@param vesselAngle number the angle of the vessel (deg)
         drawSpotToScreen = function (self, virtualMap, vesselAngle)
-            screenX, screenY = virtualMap:globalToOnScreen(self.globalX, self.globalY, vesselAngle)
-            screen.setColor(self.color[1], self.color[2], self.color[3])
+            screenX, screenY = virtualMap:toScreenSpace(self.globalX, self.globalY, vesselAngle)
+            self.color:setAsScreenColor()
             screen.drawCircleF(screenX, screenY, 6)
+            self.color:getWithModifiedValue(0.5):setAsScreenColor()
+            screen.drawCircle(screenX, screenY, 6)
         end
     }
 end
