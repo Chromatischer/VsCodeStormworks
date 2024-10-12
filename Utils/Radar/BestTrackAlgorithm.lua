@@ -45,6 +45,7 @@ function Track(coordinate)
         coordinates = {coordinate}, ---@type [table<x, y, z>] table of coordinates (3D space) 
         tSinceUpdate = 0, ---@type number Time since the last update to the Track in ticks
         angle = 0, ---@type number Angle of travel in radians
+        deltaAngle = 0, ---@type number 
         speed = 0, ---@type number Meters per tick
         updates = 0,
         lastUpdateIndex = 1,
