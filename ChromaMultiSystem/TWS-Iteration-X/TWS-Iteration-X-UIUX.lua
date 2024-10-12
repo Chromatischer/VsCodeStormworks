@@ -166,7 +166,7 @@ function onDraw()
     setColorGrey(0.3, CHDarkmode)
     screen.drawCircle(mapGPSX, mapGPSY, rangeRing)
 
-    color2(0.2, 0.6, 0.7, false):setAsScreenColor()
+    Color2(0.2, 0.6, 0.7, false):setAsScreenColor()
     px, py = math.sin(radarRotation) * rangeRing + mapGPSX, math.cos(radarRotation) * rangeRing + mapGPSY
 
     screen.drawLine(mapGPSX, mapGPSY, px, py)

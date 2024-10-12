@@ -14,7 +14,7 @@
 ---@param v ?number the value of the color (0-1)
 ---@return Color Color the color object
 ---@section color
-function color(r, g, b, h, s, v)
+function Color(r, g, b, h, s, v)
     return {
         r = r or 0, ---@type number the red of the color
         g = g or 0, ---@type number the green of the color
@@ -34,7 +34,7 @@ end
 ---@param setRGB boolean if the values are RGB or HSV
 ---@return Color Color the color object
 ---@section color2
-function color2(a, b, c, setRGB)
+function Color2(a, b, c, setRGB)
     if setRGB then
         return color(a, b, c)
     else

@@ -2,6 +2,8 @@
 ---@class Fish
 ---@module "Utils.Color"
 ---@module "Utils.VirtualMapUtils"
+---@module "Utils.Vectors.vec2"
+---@module "Utils.Vectors.vec3"
 ---@field globalAngle number the global angle of the fish
 ---@field globalX number the global X position of the fish
 ---@field globalY number the global Y position of the fish
@@ -25,7 +27,7 @@ function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
         globalY = gpsY + (math.cos(globalAngle) * distance), ---@type number the global Y position of the fish
         globalZ = gpsZ - depth, ---@type number the global Z position of the fish
         relDepth = depth, ---@type number the relative depth of the fish
-        color = color2(0, 0.5, 0.9, false):genNewHue(), ---@type Color the color of the fish generated randomly with a set value and saturation
+        color = Color2(0, 0.5, 0.9, false):genNewHue(), ---@type Color the color of the fish generated randomly with a set value and saturation
         age = 100, ---@type number the age of the fish
     }
 end
@@ -57,6 +59,17 @@ end
 ---@section getGlobalPosition
 function getGlobalPosition(self)
     return {x = self.globalX, y = self.globalY, z = self.globalZ}
+end
+---@endsection
+
+---Returns the global position of the fish as a Vec3 object
+---@class Fish
+---@field getAsVec3 function returns the global position of the fish as a Vec3 object
+---@param self Fish the fish object
+---@return Vec3 the global position of the fish as a Vec3 object
+---@section getAsVec3
+function getAsVec3(self)
+    return Vec3(self.globalX, self.globalY, self.globalZ)
 end
 ---@endsection
 

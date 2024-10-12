@@ -1,5 +1,5 @@
-SIGNAL_LIGHT = color(10, 50, 10) ---@type Color
-SIGNAL_DARK = color(200, 75, 75) ---@type Color
+SIGNAL_LIGHT = Color(10, 50, 10) ---@type Color
+SIGNAL_DARK = Color(200, 75, 75) ---@type Color
 
 ---Draws the vessel position and rotation to the screen
 ---@param screenX number the X position on screen to draw the indicator at
@@ -54,7 +54,7 @@ end
 ---@param isDarkMode boolean DarkMode
 ---@section setColorGrey
 function setColorGrey(value, isDarkMode)
-    color2(0, 0, isDarkMode and math.max(value - 0.2, 0.1) or value, false):setAsScreenColor()
+    Color2(0, 0, isDarkMode and math.max(value - 0.2, 0.1) or value, false):setAsScreenColor()
 end
 ---@endsection
 
