@@ -167,3 +167,16 @@ function vec2toString(self)
     return "(" .. self.x .. ", " .. self.y .. ")"
 end
 ---@endsection
+
+---transform using an angle in radians and a scalar and returns a new Vec2
+---@class Vec2
+---@field transform function transform using an angle in rad and a scalar and returns a new Vec2
+---@param self Vec2 the Vector
+---@param rad number the angle to transform by in radians
+---@param scalar number the scalar of the transformation
+---@section transformScalar
+function transformScalar(self, rad, scalar)
+    return Vec2(self.x * scalar * math.sin(rad), self.y * scalar * math.cos(rad))
+
+end
+---@endsection

@@ -1,118 +1,121 @@
 ---@diagnostic disable: duplicate-doc-field
 
-
----Distance between point A and point B in 2D space
----@param coordinateA table<x, y> Coordinate A
----@param coordinateB table<x, y> Coordinate B
----@return number Distance between point A and point B
----@section distance2D
-function distance2D(coordinateA, coordinateB)
-    return math.sqrt((coordinateA.x - coordinateB.x)^2 + (coordinateA.y - coordinateB.y)^2)
-end
----@endsection
-
-
----Distance between point A and point B in 3D space
----@param coordinateA table<x, y, z> Coordinate A
----@param coordinateB table<x, y, z> Coordinate B
----@return number Distance between point A and point B
----@section distance3D
-function distance3D(coordinateA, coordinateB)
-    return math.sqrt((coordinateA.x - coordinateB.x)^2 + (coordinateA.y - coordinateB.y)^2 + (coordinateA.z - coordinateB.z)^2)
-end
----@endsection
-
 ---Track object with coordinates, time since the last update, angle and speed
 ---@class Track Track object
----@field coordinates [table<x, y, z>] table of coordinates (3D space)
+---@field coordinates table<Vec3> table of coordinates (3D space)
 ---@field tSinceUpdate number Time since the last update in Ticks
 ---@field angle number Angle in radians
 ---@field speed number Meters per tick
----@field calcAngle function Calculate the angle of the track
----@field calcSpeed function Calculate the speed of the track
----@field getLatest function Get the latest coordinate of the track
----@field update function Add 1 tick to the tSinceUpdate variable
----@field calcEstimatePosition function Calculate the estimated position of the track
----@field getDistanceSinceUpdate function Get the distance since the last update
----@field private lastUpdateIndex number Index of coordinate of the last update
+---@field lastUpdateIndex number Index of coordinate of the last update
 ---@field getUpdatePos function Returns the last update position
 ---@field dataUpdate function Resets the time since the last update and sets the lastUpdateIndex to the last coordinate
----@param coordinate table<x, y, z> Coordinate of the first point
+---@param coordinate Vec3 Coordinate of the first point
 ---@return Track Track new track object at the given coordinate
 ---@section Track
 function Track(coordinate)
     return {
-        coordinates = {coordinate}, ---@type [table<x, y, z>] table of coordinates (3D space) 
+        coordinates = {coordinate}, ---@type table<Vec3> table of coordinates (3D space) 
         tSinceUpdate = 0, ---@type number Time since the last update to the Track in ticks
         angle = 0, ---@type number Angle of travel in radians
         deltaAngle = 0, ---@type number 
         speed = 0, ---@type number Meters per tick
         updates = 0,
         lastUpdateIndex = 1,
-
-        ---Calculates the angle of the track in radians
-        ---@param self Track Track object
-        calcAngle = function (self)
-            --DONE: This angle is 90 deg off in the anti clockwise direction! I don't know why but this should be fixed at some point in time!
-            self.angle = math.atan(self:getLatest().y - self:getUpdatePos().y, self:getLatest().x - self:getUpdatePos().x) + math.pi / 2
-        end,
-
-        ---Calculates the speed of the track in m/tick
-        ---@param self Track Track object
-        calcSpeed = function (self)
-            --DONE: The speed is off by about a factor of 4
-            --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
-            -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
-            self.speed = self:getDistanceSinceUpdate() / self.tSinceUpdate --m/tick
-        end,
-
-        --tostring = function (self)
-        --    return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
-        --end,
-
-        ---Returns the last coordinate that was saved to the Track
-        ---@param self Track Track object
-        ---@return table<x, y, z> Coordinate of the last point
-        getLatest = function (self)
-            return self.coordinates[#self.coordinates]
-        end,
-
-        ---Adds 1 tick to the tSinceUpdate variable
-        ---@param self Track Track object
-        update = function (self)
-            self.tSinceUpdate = self.tSinceUpdate + 1
-        end,
-
-        ---Calculates the estimated position of the track
-        ---@param self Track Track object
-        ---@return table<x, y, z> Estimated position of the track at the current point of time
-        calcEstimatePosition = function (self)
-            return {
-                x = self:getLatest().x + (self.speed * self.tSinceUpdate) * math.sin(self.angle),
-                y = self:getLatest().y + (self.speed * self.tSinceUpdate) * math.cos(self.angle),
-            }
-        end,
-
-        dataUpdate = function (self)
-            self.tSinceUpdate = 0
-            self.lastUpdateIndex = #self.coordinates
-        end,
-
-        getDistanceSinceUpdate = function (self)
-            return distance3D(self.coordinates[self.lastUpdateIndex], self:getLatest()) --fixes the problem with the speed being off by a factor of 4 because of the wrong coordinate being used
-        end,
-
-        getUpdatePos = function (self)
-            return self.coordinates[self.lastUpdateIndex]
-        end
-
-        --Commented out because it is only for debugging and will increase compile size
-        --checkNil = function (self)
-        --    return self:getLatest() == nil
-        --end
     }
 end
 ---@endsection
+
+---Calculates the angle of the track in radians
+---@class Track
+---@field calcAngle function Calculate the angle of the track
+---@param self Track Track object
+---@section calcAngle
+function calcAngle(self)
+    self.angle = self:getLatest():toVec2():angleTo(self.coordinates[self.lastUpdateIndex]:toVec2()) --TODO: check if this works
+end
+---@endsection
+
+---Calculates the speed of the track in m/tick
+---@class Track
+---@field calcSpeed function Calculate the speed of the track
+---@param self Track Track object
+---@section calcSpeed
+function calcSpeed(self)
+    --DONE: The speed is off by about a factor of 4
+    --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
+    -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
+    self.speed = self:getDistanceSinceUpdate() / self.tSinceUpdate --m/tick
+end
+---@endsection
+
+---Converts the Track object to a string
+---@class Track
+---@field tostring function Convert the Track object to a string
+---@param self Track Track object
+---@return string String representation of the Track object
+---@section tostring
+function tostring(self)
+    return "c:" .. table.concat(self.coordinates[#self.coordinates], "|") .. " dt:" .. self.tSinceUpdate .. " a:" .. string.format("%03d", math.floor(math.deg(self.angle))) .. " s:" .. string.format("%02d", math.ceil(self.speed))
+end
+---@endsection
+
+---Returns the last coordinate that was saved to the Track
+---@class Track
+---@field getLatest function returns the latest vec3 coordinate object saved
+---@param self Track Track object
+---@return Vec3 Coordinate of the last point
+---@section getLatest
+function getLatest(self)
+    return self.coordinates[#self.coordinates]
+end
+---@endsection
+
+---Adds 1 tick to the tSinceUpdate variable
+---@class Track
+---@field update function
+---@param self Track Track object
+---@section update
+function update(self)
+    self.tSinceUpdate = self.tSinceUpdate + 1
+end
+---@endsection
+
+---Calculates the estimated position of the track
+---@class Track
+---@field calcEstimatedAPosition function Calculates the estimated position of the track
+---@param self Track Track object
+---@return Vec2 Estimated position of the track at the current point of time
+---@section calcEstimatePosition
+function calcEstimatePosition(self)
+    return self.getLatest():toVec2():transformScalar(self.speed * self.tSinceUpdate, self.angle) --This looks really nice tbh but I have to test it
+end
+---@endsection
+
+---updates the internal Data
+---@class Track
+---@field dataUpdate function updates the internal Data
+---@param self Track Track object
+---@section dataUpdate
+function dataUpdate(self)
+    self.tSinceUpdate = 0
+    self.lastUpdateIndex = #self.coordinates
+end
+---@endsection
+
+---Returns the distance since the last update
+---@class Track
+---@field getDistanceSinceUpdate function Returns the distance since the last update
+---@param self Track Track object
+---@return number number the distance traveled since last updated
+---@section getDistanceSinceUpdate
+function getDistanceSinceUpdate(self)
+    return self:getLatest():distanceTo(self.coordinates[self.lastUpdateIndex])
+end
+---@endsection
+
+function getUpdatePos(self)
+    return self.coordinates[self.lastUpdateIndex]
+end
 
 ---Tries to find the best tracks for a given number of contacts
 ---
@@ -272,64 +275,4 @@ end
 function areTablesEqual(a, b)
     return table.concat(a) == table.concat(b)
 end
----@endsection
-
----@section Tests
---#region distance2D
-assert(distance2D({x = 0, y = 0}, {x = 0, y = 0}) == 0, "distance2D test 1 failed")
-assert(distance2D({x = 0, y = 0}, {x = 1, y = 0}) == 1, "distance2D test 2 failed")
-assert(distance2D({x = 0, y = 0}, {x = 0, y = 1}) == 1, "distance2D test 3 failed")
-assert(distance2D({x = 0, y = 0}, {x = 1, y = 1}) == math.sqrt(2), "distance2D test 4 failed")
-print("Passed distacne 2D tests!")
---#endregion
-
---#region distance3D
-assert(distance3D({x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0}) == 0, "distance3D test 1 failed")
-assert(distance3D({x = 0, y = 0, z = 0}, {x = 1, y = 0, z = 0}) == 1, "distance3D test 2 failed")
-assert(distance3D({x = 0, y = 0, z = 0}, {x = 0, y = 1, z = 0}) == 1, "distance3D test 3 failed")
-assert(distance3D({x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 1}) == 1, "distance3D test 4 failed")
-assert(distance3D({x = 0, y = 0, z = 0}, {x = 1, y = 1, z = 1}) == math.sqrt(3), "distance3D test 5 failed")
-print("Passed distacne 3D tests!")
---#endregion
-
---#region newTrack
-track = Track({x = 0, y = 0, z = 0})
-assert(track.coordinates[1].x == 0 and track.coordinates[1].y == 0 and track.coordinates[1].z == 0, "newTrack test 1 failed")
-assert(track.tSinceUpdate == 0, "newTrack test 2 failed")
-assert(track.angle == 0, "newTrack test 3 failed")
-assert(track.speed == 0, "newTrack test 4 failed")
-print("Passed newTrack tests!")
---#endregion
-
---#region bestTrackAlgorithm
-contacts = {{x = 0, y = 0, z = 0}, {x = 1, y = 1, z = 1}, {x = 2, y = 2, z = 2}}
-tracks = {Track({x = 0, y = 0, z = 0}), Track({x = 1, y = 1, z = 1})}
-updateTrackT(tracks)
-maxDistance = math.sqrt(2)
-tracks, contacts = bestTrackAlgorithm(contacts, tracks, maxDistance)
-assert(areTablesEqual(tracks[1].coordinates[#tracks[1].coordinates], {x = 0, y = 0, z = 0}), "bestTrackAlgorithm test 1 failed")
-assert(areTablesEqual(tracks[2].coordinates[#tracks[2].coordinates], {x = 1, y = 1, z = 1}), "bestTrackAlgorithm test 2 failed")
-assert(#contacts == 1, "bestTrackAlgorithm test 3 failed")
-print("Passed bestTrackAlgorithm tests!")
---#endregion
-
---#region updateTrackT
-tracks = {Track({x = 0, y = 0, z = 0}), Track({x = 1, y = 1, z = 1})}
-tracks = updateTrackT(tracks)
-assert(tracks[1].tSinceUpdate == 1, "updateTrackT test 1 failed")
-assert(tracks[2].tSinceUpdate == 1, "updateTrackT test 2 failed")
-print("Passed updateTrackT tests!")
---#endregion
-
---#region newMatrix
-matrix = newMatrix(2, 2, 0)
-assert(matrix[1][1] == 0 and matrix[1][2] == 0 and matrix[2][1] == 0 and matrix[2][2] == 0, "newMatrix test 1 failed")
-print("Passed newMatrix tests!")
---#endregion
-
---#region areTablesEqual
-assert(areTablesEqual({1, 2, 3}, {1, 2, 3}), "areTablesEqual test 1 failed")
-assert(not areTablesEqual({1, 2, 3}, {1, 2, 4}), "areTablesEqual test 2 failed")
-print("Passed areTablesEqual tests!")
---#endregion
 ---@endsection

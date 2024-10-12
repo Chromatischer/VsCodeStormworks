@@ -28,6 +28,8 @@ require("Utils.Radar.BestTrackAlgorithm")
 require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.DrawAddons")
 require("Utils.Color")
+require("Utils.Vectors.vec2")
+require("Utils.Vectors.vec3")
 
 --Will use 3 simultaneous contacts for now... so that means: 3 azimuths, 3 elevations, 3 distances, 3 contact statuses
 
@@ -92,8 +94,6 @@ function onTick()
         for i = 0, 2 do
             distance = input.getNumber(i * 4 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
-                --DONE: add pre evaluation smoothing using TimeSinceDetected
-                --This works good! The data is being smoothed really nicely
                 --TODO: find out, why there are ghost targets apearing betweeen the actual target and the radar itself
                 --These ghost targets are in one line with the radar and the actual target
                 --They are mirroring the speed, as well as angle of the actual target, though the speed is half of that of the actual target
@@ -115,7 +115,6 @@ function onTick()
         end
 
         radarIsContinousRotation = property.getBool("Radar Mode: ")
-        --Right now I will not do pre-target smoothing using the time since detected... I will use the plain position, but this will be an option in the future
         --This checks if either the radar has done a full rotation, or if the radar has changed direction, so has hit one of its limits and is now moving the other way
         --TODO: When updating, the data gets messed up when on the edge of the detection
         if (radarRotation % 180 < 3 and radarIsContinousRotation) then -- or ((lastRadarDelta > 0 and radarMovingPositive) or (lastRadarDelta < 0 and not radarMovingPositive) and (not radarIsContinousRotation)) then
