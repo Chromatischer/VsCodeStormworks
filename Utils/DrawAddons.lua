@@ -1,9 +1,5 @@
-require("Utils.Color")
-
----@section constants
 SIGNAL_LIGHT = color(10, 50, 10) ---@type Color
 SIGNAL_DARK = color(200, 75, 75) ---@type Color
----@endsection
 
 ---Draws the vessel position and rotation to the screen
 ---@param screenX number the X position on screen to draw the indicator at

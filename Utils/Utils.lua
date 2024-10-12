@@ -17,23 +17,10 @@ end
 ---@param min number the minimum value for x
 ---@param max number the maximum value for x
 ---@return number number the clamped value of x within min and max
----@diagnostic disable-next-line: duplicate-set-field
----@section math.clamp addon
+---@section math.clamp
 ---@diagnostic disable-next-line: duplicate-set-field
 function math.clamp(x,min,max)
     return math.min(math.max(x, min), max)
-end
----@endsection
-
----sets the default map colors for your lua products
----@section setMapColors
-function setMapColors()
-    screen.setMapColorOcean(0,0,0)
-    screen.setMapColorShallows(55,55,55)
-    screen.setMapColorLand(80,80,80)
-    screen.setMapColorGrass(80,80,80)
-    screen.setMapColorSand(80,80,80)
-    screen.setMapColorSnow(80,80,80)
 end
 ---@endsection
 
@@ -45,19 +32,6 @@ function stringPixelLength(string)
     return #string * 5
 end
 ---@endsection
-
----returns the distance between two known points
----@param x1 number the first points X-Coordinate
----@param y1 number the first points Y-Coordinate
----@param x2 number the second points X-Coordinate
----@param y2 number the second points Y-Coordinate
----@return number distance the distance between point A and B
----@section distanceBetweenPoints
-function distanceBetweenPoints(x1,y1,x2,y2)
-    return math.sqrt((x1 - x2)^2 + (y1 - y2)^2)
-end
----@endsection
-
 
 ---check if a number is NAN
 ---@param number number the number to check for NAN
@@ -123,11 +97,6 @@ end
 function onMapDistance(scale, screenWidth, screenHeight, distance)
     return (distance / (scale * 1000)) * math.min(screenWidth, screenHeight) -- I am not sure about the math.min part tbh!
 end
----@endsection
-
----constants
----@section constants
-math.piHalf = math.pi / 2
 ---@endsection
 
 ---applies the Exponentail Moving Average on the value a and b where

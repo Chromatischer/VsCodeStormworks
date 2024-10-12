@@ -47,6 +47,7 @@ end
 -- CH14: Local Relative Depth to Fish in meters
 
 --CHB4: Fish Finder Active
+--CHB5: Fish Detected
 --#endregion
 
 require("Utils.Fish")
@@ -54,20 +55,16 @@ require("Utils.VirtualMapUtils")
 require("Utils.Color")
 require("Utils.DrawAddons")
 require("Utils.StringFormatUtils")
+require("Utils.Utils")
 
-zoom = 5
-zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 allFish = {} ---@type table<Fish>
 virtualMap = nil ---@type VirtualMap
 screenCenterX, screenCenterY = 0, 0
-lastGlobalScale = 1
-isUsingCHZoom = false
 selfID = 0
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    CHGlobalScale = input.getNumber(1)
     gpsX = input.getNumber(2)
     gpsY = input.getNumber(3)
     gpsZ = input.getNumber(4)
@@ -83,7 +80,7 @@ function onTick()
     SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
     selfID = property.getNumber("SelfID")
 
-    if input.getBool(4) then
+    if input.getBool(5) then --check that there is a fish detected you fucking twat
         fish = Fish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
         table.insert(allFish, fish)
         for i = #allFish, 1, -1 do
@@ -95,36 +92,24 @@ function onTick()
         end
     end
 
-    if isUsingCHZoom then
-        zoom = math.clamp(CHGlobalScale, 1, 21)
-    end
-    if CHGlobalScale ~= lastGlobalScale then
-        isUsingCHZoom = true
-    end
-    lastGlobalScale = CHGlobalScale
-
     --#region Setting values on Boot
     if ticks < 10 then
         screenCenterX, screenCenterY = gpsX, gpsY
-        lastGlobalScale = CHGlobalScale
     end
     --#endregion
 end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    virtualMap = virtualMap(screenCenterX, screenCenterY, Swidth, Sheight, zooms[zoom], true)
+    virtualMap = VirtualMap(screenCenterX, screenCenterY, Swidth, Sheight, 100, true)
 
     onScreenX, onScreenY = virtualMap:toScreenSpace(screenCenterX, screenCenterY, vesselAngle)
     drawDirectionIndicator(onScreenX, onScreenY, CHDarkmode, vesselAngle)
 
     for _, fish in ipairs(allFish) do
-        fish = fish ---@type Fish
-        fish:drawSpotToScreen(virtualMap, vesselAngle)
-    end
-
-    if not zoom == CHGlobalScale then
-        setColorGrey(0.7, CHDarkmode)
-        screen.drawText(2, 2, "D: " .. string.formatNumberAsInteger(zooms[zoom], 3, "0"))
+        if fish then -- Oh no, there is no fish!
+            fish = fish ---@type Fish
+            fish:drawSpotToScreen(virtualMap, vesselAngle)
+        end
     end
 end
