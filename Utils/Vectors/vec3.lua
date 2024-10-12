@@ -1,15 +1,15 @@
 ---Creates a new Vec3 object
 ---@class Vec3
----@param x number the x component of the vector
----@param y number the y component of the vector
----@param z number the z component of the vector
+---@param x ?number the x component of the vector
+---@param y ?number the y component of the vector
+---@param z ?number the z component of the vector
 ---@return Vec3 the new vector
 ---@section Vec3
 function Vec3(x, y, z)
     return {
-        x = x,
-        y = y,
-        z = z,
+        x = x or 0,
+        y = y or 0,
+        z = z or 0,
     }
 end
 ---@endsection
@@ -51,23 +51,51 @@ end
 
 ---Returns the distance to another vector
 ---@class Vec3
----@field distanceTo function returns the distance to another vector
+---@field distanceToVec3 function returns the distance to another vector
 ---@param self Vec3 the vector
 ---@param other Vec3 the other vector
 ---@return number the distance to the other vector
----@section distanceTo
-function distanceTo(self, other)
+---@section distanceToVec3
+function distanceToVec3(self, other)
     return math.sqrt((self.x - other.x) ^ 2 + (self.y - other.y) ^ 2 + (self.z - other.z) ^ 2)
 end
 ---@endsection
 
 ---Returns the length of the vector
 ---@class Vec3
----@field length function returns the length of the vector
+---@field vec3length function returns the length of the vector
 ---@param self Vec3 the vector
 ---@return number the length of the vector
----@section length
-function length(self)
+---@section vec3length
+function vec3length(self)
     return math.sqrt(self.x ^ 2 + self.y ^ 2 + self.z ^ 2)
+end
+---@endsection
+
+---Adds the second Vec3 values to itself
+---@class Vec3
+---@field addVec3 function adds the second Vec3 values to itself
+---@param self Vec3 the vector
+---@param other Vec3 the other vector
+---@section addVec3
+function addVec3(self, other)
+    self.x = self.x + other.x
+    self.y = self.y + other.y
+    self.z = self.z + other.z
+end
+---@endsection
+
+---Sums the whole table of Vec3 values to itself
+---@class Vec3
+---@field sumTableVec3 function sums the whole table of Vec3 values to itself
+---@param self Vec3 the vector
+---@param table table<Vec3> the table of vectors
+---@return Vec3 self itself with the summed values
+---@section sumTableVec3
+function sumTableVec3(self, table)
+    for _, vector in ipairs(table) do
+        self = self:addVec3(vector)
+    end
+    return self
 end
 ---@endsection

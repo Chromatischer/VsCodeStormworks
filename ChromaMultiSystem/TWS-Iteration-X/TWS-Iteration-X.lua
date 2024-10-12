@@ -28,7 +28,7 @@ require("Utils.Radar.BestTrackAlgorithm")
 require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.DrawAddons")
 require("Utils.Color")
-require("Utils.Vectors.vec2")
+require("Utils.Vectors.vec2") --TODO: check for compilation mistakes in the compression, as the vec2 and vec3 have similar function names
 require("Utils.Vectors.vec3")
 
 --Will use 3 simultaneous contacts for now... so that means: 3 azimuths, 3 elevations, 3 distances, 3 contact statuses
@@ -55,8 +55,8 @@ lastRadarRotation = 0
 lastRadarDelta = 0
 radarMovingPositive = true
 tracks = {} ---@type table<Track> Tracks
-contacts = {} ---@type table<x, y, z> Contacts
-rawRadarData = {{}, {}, {}} ---@type table<table<table<x, y, z>>> Raw Radar Data
+contacts = {} ---@type table<Vec3> Contacts
+rawRadarData = {{}, {}, {}} ---@type table< table<Vec3> > Raw Radar Data
 SelfIsSelected = false
 reachedLimit = false
 screenCenterX = 0
@@ -92,6 +92,7 @@ function onTick()
         dataOffset = 11
         boolOffset = 4
         for i = 0, 2 do
+            radarData = rawRadarData[i + 1]
             distance = input.getNumber(i * 4 + dataOffset)
             if input.getBool(i + boolOffset) and distance > 20 then
                 --TODO: find out, why there are ghost targets apearing betweeen the actual target and the radar itself
@@ -99,16 +100,9 @@ function onTick()
                 --They are mirroring the speed, as well as angle of the actual target, though the speed is half of that of the actual target
                 --I can imagine this phenomenon is caused by the averaging, though I am unsure of how I can fix this!
                 if input.getNumber(i * 4 + 3 + dataOffset) ~= 0 then --while Time Since Detected is not 0 the coordinates are added to a temporary table
-                    table.insert(rawRadarData[i + 1], radarToGlobalCoordinates(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
+                    table.insert(rawRadarData[i + 1], radarToGlobalVec3(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
                 else --If Time Since Detected is 0, the values are averaged and added to the contacts table
-                    sumX, sumY, sumZ = 0, 0, 0
-                    for _, raw in ipairs(rawRadarData[i + 1]) do
-                        sumX = sumX + raw.x
-                        sumY = sumY + raw.y
-                        sumZ = sumZ + raw.z
-                    end
-
-                    table.insert(contacts, {x = sumX / #rawRadarData[i + 1], y = sumY / #rawRadarData[i + 1], z = sumZ / #rawRadarData[i + 1]})
+                    table.insert(contacts, Vec3():sumTableVec3(radarData):divide(#radarData)) --averages the coordinates in the temporary table, adds the result to the contacts table
                     rawRadarData[i + 1] = {}
                 end
             end

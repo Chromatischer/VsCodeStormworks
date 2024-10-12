@@ -2,26 +2,26 @@
 ---@class Vec2
 ---@field x number the x component of the vector
 ---@field y number the y component of the vector
----@param x number the x component of the vector
----@param y number the y component of the vector
+---@param x ?number the x component of the vector
+---@param y ?number the y component of the vector
 ---@return Vec2 the new vector
 ---@section Vec2
 function Vec2(x, y)
     return {
-        x = x,
-        y = y,
+        x = x or 0,
+        y = y or 0,
     }
 end
 ---@endsection
 
 ---Returns the distance between two vectors
 ---@class Vec2
----@field distanceTo function returns the distance between two vectors
+---@field distanceToVec2 function returns the distance between two vectors
 ---@param self Vec2 the first vector
 ---@param other Vec2 the second vector
 ---@return number the distance between the two vectors
----@section distanceTo
-function distanceTo(self, other)
+---@section distanceToVec2
+function distanceToVec2(self, other)
     return math.sqrt((self.x - other.x) ^ 2 + (self.y - other.y) ^ 2)
 end
 ---@endsection
@@ -45,7 +45,7 @@ end
 ---@param other Vec2 the second vector
 ---@return Vec2 the new vector with the result
 ---@section add
-function add(self, other)
+function addVec2(self, other)
     return Vec2(self.x + other.x, self.y + other.y)
 end
 ---@endsection
@@ -88,11 +88,11 @@ end
 
 ---Returns the length of the vector
 ---@class Vec2
----@field length function returns the length of the vector
+---@field vec2length function returns the length of the vector
 ---@param self Vec2 the vector
 ---@return number the length of the vector
----@section length
-function length(self)
+---@section vec2length
+function vec2length(self)
     return math.sqrt(self.x ^ 2 + self.y ^ 2)
 end
 ---@endsection
@@ -111,24 +111,24 @@ end
 
 ---Multiplies the vector by a scalar and returns a new vector with the result
 ---@class Vec2
----@field multiply function multiplies the vector by a scalar and returns a new vector with the result
+---@field scalarMultiply function multiplies the vector by a scalar and returns a new vector with the result
 ---@param self Vec2 the vector
 ---@param scalar number the scalar
 ---@return Vec2 the new vector with the result
----@section multiply
-function multiply(self, scalar)
+---@section scalarMultiply
+function scalarMultiply(self, scalar)
     return Vec2(self.x * scalar, self.y * scalar)
 end
 ---@endsection
 
 ---Divides the vector by a scalar and returns a new vector with the result
 ---@class Vec2
----@field divide function divides the vector by a scalar and returns a new vector with the result
+---@field scalarDivide function divides the vector by a scalar and returns a new vector with the result
 ---@param self Vec2 the vector
 ---@param scalar number the scalar
 ---@return Vec2 the new vector with the result
----@section divide
-function divide(self, scalar)
+---@section scalarDivide
+function scalarDivide(self, scalar)
     return Vec2(self.x / scalar, self.y / scalar)
 end
 ---@endsection
@@ -170,13 +170,22 @@ end
 
 ---transform using an angle in radians and a scalar and returns a new Vec2
 ---@class Vec2
----@field transform function transform using an angle in rad and a scalar and returns a new Vec2
+---@field transformScalar function transform using an angle in rad and a scalar and returns a new Vec2
 ---@param self Vec2 the Vector
 ---@param rad number the angle to transform by in radians
 ---@param scalar number the scalar of the transformation
 ---@section transformScalar
 function transformScalar(self, rad, scalar)
     return Vec2(self.x * scalar * math.sin(rad), self.y * scalar * math.cos(rad))
+end
+---@endsection
 
+---Converts a Vec2 to a Vec3 with the specified z value or 0
+---@param self Vec2 the vector
+---@param z ?number the z component of the new vector
+---@return Vec3 Vec3 the new vector with the specified z value or 0
+---@section vec2ToVec3
+function vec2ToVec3(self, z)
+    return Vec3(self.x, y, z or 0)
 end
 ---@endsection
