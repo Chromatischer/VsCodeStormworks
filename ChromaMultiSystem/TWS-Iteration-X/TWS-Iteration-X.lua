@@ -56,15 +56,13 @@ lastRadarDelta = 0
 radarMovingPositive = true
 tracks = {} ---@type table<Track> Tracks
 contacts = {} ---@type table<Vec3> Contacts
-rawRadarData = {{}, {}, {}} ---@type table< table<Vec3> > Raw Radar Data
+rawRadarData = {} ---@type table<Vec3> Raw Radar Data
 SelfIsSelected = false
 reachedLimit = false
 screenCenterX = 0
 screenCenterY = 0
 gpsX, gpxY, gpsZ = 0, 0, 0
 finalZoom = 1
-debg = {0, 0, 0}
-debg2 = {false, false, false}
 
 trackMaxUpdateTicks = 600
 trackMaxGroupDistance = 50
@@ -94,28 +92,27 @@ function onTick()
         dataOffset = 11
         boolOffset = 4
         for i = 0, 2 do
-            radarData = rawRadarData[i + 1]
+            radarData = rawRadarData[i + 1] ---@type Vec3
             distance = input.getNumber(i * 4 + dataOffset)
             targetDetected = input.getBool(i + boolOffset)
-            debg2[i + 1] = targetDetected
             timeSinceDetected = input.getNumber(i * 4 + 3 + dataOffset)
-            if targetDetected and distance > 20 then --Check if there is a target being detected and sensible for tracking
-                debg[i + 1] = timeSinceDetected
-                --Target data is always added to the temporary table to be evaluated later
-                table.insert(rawRadarData[i + 1], radarToGlobalVec3(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), gpsX, gpsY, gpsZ, compas, input.getNumber(13)))
-            end
+            relPos = radarToRelativeVec3(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), compas, input.getNumber(13))
+            if timeSinceDetected ~= 0 then
+                --see: https://discord.com/channels/357480372084408322/578586360336875520/1295276857482281020 (message by smithy3141)
 
-            --Ok, so the following is going to happen:
-            --I: new target is detected, targetDetected is true and timeSinceDetected is 0, the data is added to the temporary table
-            --II: the target stays inside the detection azimuth, time since detected is != 0, the data is added to the temporary table
-            --III.1: the target is no longer detected so it is being flushed to the contacts table and the temporary table is emptied
-            --III.2: the target is still detected but tsd is 0 (new target / new noise), the data is flushed to the contacts table and the temporary table is emptied
-            if (not targetDetected) or (timeSinceDetected == 0 and targetDetected) then
-                if #radarData > 0 then --Checks if there is data to be flushed
-                    --Insets into the contacts table the average position of the recorded data
-                    table.insert(contacts, scalarDivideVec3(sumTableVec3(Vec3(), radarData), #radarData))
-                end
-                rawRadarData[i + 1] = {}
+                --this is sithy's low pass filter formula
+                --low pass filter formula (filters out noise gradually)
+                --$$new = old + \frac{value - old}{n}$$
+                --rawRadarData[i + 1] = addVec3(radarData, scalarDivideVec3(subtractVec3(relPos, radarData), timeSinceDetected)) ---@type Vec3
+
+                --from my understanding, this is better because it actually filters out the noise and not just smooths it out
+                --this is using the recursive average formula
+                --$$new = \frac{(n-1) * old + value}{n} $$
+                rawRadarData[i + 1] = scalarDivideVec3(addVec3(relPos, scaleVec3(radarData, timeSinceDetected - 1)), timeSinceDetected) ---@type Vec3
+            elseif vec3length(relPos) > minDistance then
+                --Convert the relative position to a global position and add it to the contacts table
+                table.insert(contacts, addVec3(relPos, Vec3(gpsX, gpsY, gpsZ)))
+                rawRadarData[i + 1] = Vec3(0, 0, 0) --Is this right? Because then it will take the 0, 0, 0 into account for the average, which is bad?
             end
         end
 

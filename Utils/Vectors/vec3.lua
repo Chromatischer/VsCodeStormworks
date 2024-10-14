@@ -108,3 +108,15 @@ function vec3ToString(self)
     return "x: " .. self.x .. ", y: " .. self.y .. ", z: " .. self.z
 end
 ---@endsection
+
+---Applies a scalar to the vector and returns a new vector with the result
+---@class Vec3
+---@field scaleVec3 function applies a scalar to the vector and returns a new vector with the result
+---@param self Vec3 the vector
+---@param scalar number the scalar
+---@return Vec3 the new vector with the result
+---@section scaleVec3
+function scaleVec3(self, scalar)
+    return Vec3(self.x * scalar, self.y * scalar, self.z * scalar)
+end
+---@endsection

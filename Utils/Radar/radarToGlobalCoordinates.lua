@@ -44,3 +44,21 @@ function radarToGlobalVec3(contactDistance, contactYaw, contactPitch, gpsX, gpsY
     return Vec3(temp.x, temp.y, temp.z)
 end
 ---@endsection
+
+---Converts the radar contact data to a relative position from the vehicle
+---@param contactDistance number the contact distance from the radar composite
+---@param contactYaw number the contact azimuth from the radar composite
+---@param contactPitch number the contact pitch from the radar composite
+---@param compas number the compas direction of the vehicle
+---@param pitch number the pitch tilt of the vehicle
+---@return Vec3 Vec3 the relative position of the radar contact
+---@section radarToRelativeVec3
+function radarToRelativeVec3(contactDistance, contactYaw, contactPitch, compas, pitch)
+    globalAngle = math.rad((contactYaw * 360 % 360) + compas * -360)
+    x = contactDistance * math.sin(globalAngle)
+    y = contactDistance * math.cos(globalAngle)
+    globalPitch = math.rad((contactPitch * 360) + pitch * 360)
+    z = contactDistance * math.tan(globalPitch)
+    return Vec3(x, y, z)
+end
+---@endsection
