@@ -9,7 +9,7 @@
 function Vec2(x, y)
     return {
         x = x or 0,
-        y = y or 0,
+        y = y or 0
     }
 end
 ---@endsection
@@ -34,17 +34,17 @@ end
 ---@return number the angle between the two vectors (radians)
 ---@section angleTo
 function angleTo(self, other)
-    return math.atan(other.y - self.y, other.x - self.x)
+    return math.atan(self.y - other.y, self.x - other.x)
 end
 ---@endsection
 
 ---Adds two vectors and retruns a new vector with the result
 ---@class Vec2
----@field add function adds two vectors and returns a new vector with the result
+---@field addVec2 function adds two vectors and returns a new vector with the result
 ---@param self Vec2 the first vector
 ---@param other Vec2 the second vector
 ---@return Vec2 the new vector with the result
----@section add
+---@section addVec2
 function addVec2(self, other)
     return Vec2(self.x + other.x, self.y + other.y)
 end
@@ -174,9 +174,10 @@ end
 ---@param self Vec2 the Vector
 ---@param rad number the angle to transform by in radians
 ---@param scalar number the scalar of the transformation
+---@return Vec2 Vec2 the new vector multiplied by the scalar and rotated by the angle
 ---@section transformScalar
 function transformScalar(self, rad, scalar)
-    return Vec2(self.x * scalar * math.sin(rad), self.y * scalar * math.cos(rad))
+    return Vec2(self.x + (scalar * math.sin(rad)), self.y + (scalar * math.cos(rad)))
 end
 ---@endsection
 

@@ -31,7 +31,7 @@ end
 ---@param self Track Track object
 ---@section calcAngle
 function calcAngle(self)
-    self.angle = self:getLatest():toVec2():angleTo(self.coordinates[self.lastUpdateIndex]:toVec2()) --TODO: check if this works
+    self.angle = angleTo(vec3ToVec2(getLatest(self)), vec3ToVec2(getUpdatePos(self))) + math.pi / 2 --TODO: check if this works
 end
 ---@endsection
 
@@ -44,7 +44,7 @@ function calcSpeed(self)
     --DONE: The speed is off by about a factor of 4
     --OMFG this cant be the problem... I forgor the self before the speed, so it was not updating the speed of the track but the speed of the function
     -- The problem is a division by 0. That means that tSinceUpdate has to be 0. Even if the distance is 0, the speed will be 0 not INF.
-    self.speed = self:getDistanceSinceUpdate() / self.tSinceUpdate --m/tick
+    self.speed = getDistanceSinceUpdate(self) / self.tSinceUpdate --m/tick
 end
 ---@endsection
 
@@ -87,7 +87,9 @@ end
 ---@return Vec2 Estimated position of the track at the current point of time
 ---@section calcEstimatePosition
 function calcEstimatePosition(self)
-    return self.getLatest():toVec2():transformScalar(self.speed * self.tSinceUpdate, self.angle) --This looks really nice tbh but I have to test it
+    --What it acutally does: return (self.x * (self.speed * self.tSinceUpdate) * math.sin(rad))
+    --This should be exactly what I need!
+    return transformScalar(vec3ToVec2(getLatest(self)), self.angle, self.speed * self.tSinceUpdate) --This looks really nice tbh but I have to test it
 end
 ---@endsection
 
@@ -109,7 +111,7 @@ end
 ---@return number number the distance traveled since last updated
 ---@section getDistanceSinceUpdate
 function getDistanceSinceUpdate(self)
-    return self:getLatest():distanceTo(self.coordinates[self.lastUpdateIndex])
+    return distanceToVec3(getLatest(self), getUpdatePos(self))
 end
 ---@endsection
 
@@ -209,20 +211,20 @@ function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
         isUpdated = false
         for j = #contacts, 1, -1 do
             contact = contacts[j] ---@type Vec3
-            conditionAtPrevious = track:getLatest():distanceTo(contact) < maxDistance
+            conditionAtPrevious = distanceToVec3(getLatest(track), contact) < maxDistance
             --Calculates the estimated position of the contact at the current time, converts to vec3 with z being latest recorded z
             --Checks if the distance between the contact and the best track is less than the maximum distance
-            conditionAtPredicted = track:calcEstimatePosition():vec2ToVec3(track.getLatest().z):distanceTo(contact:toVec2()) < maxDistance
-            if track:getLatest():distanceTo(contact) < maxDistance then --check if the distance between the contact and the best track is less than the maximum distance
+            conditionAtPredicted = distanceToVec3(vec2ToVec3(calcEstimatePosition(track), getLatest(track).z), contact) < maxDistance
+            if conditionAtPrevious or conditionAtPredicted then --check if the distance between the contact and the best track is less than the maximum distance
                 table.insert(track.coordinates, contact)
                 isUpdated = true
                 table.remove(contacts, j) --remove the contact from the contacts array as it has been assigned to a track
             end
         end
         if isUpdated then
-            track:calcAngle()
-            track:calcSpeed()
-            track:dataUpdate() --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
+            calcAngle(track)
+            calcSpeed(track)
+            dataUpdate(track) --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
         end
     end
 

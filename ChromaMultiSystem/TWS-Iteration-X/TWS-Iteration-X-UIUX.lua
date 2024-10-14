@@ -48,6 +48,7 @@ end
 --The Idea of this project is to seperate the UI / UX layer from the main logic in the other script. The CH multi has to be wired through to the main. All the other data has to be too!
 
 require("Utils.Utils")
+require("Utils.Color")
 require("Utils.DrawAddons")
 
 zoom = 5
@@ -161,13 +162,13 @@ function onDraw()
     drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
     --#region Radar range as well as radar look direction indicator
-    rangeRing = maxRadarRange / zooms[zoom] * math.min(Swidth, Sheight)
+    rangeRing = maxRadarRange / (zooms[zoom] * 1000) * math.min(Swidth, Sheight)
 
     setColorGrey(0.3, CHDarkmode)
     screen.drawCircle(mapGPSX, mapGPSY, rangeRing)
 
-    Color2(0.2, 0.6, 0.7, false):setAsScreenColor()
-    px, py = math.sin(radarRotation) * rangeRing + mapGPSX, math.cos(radarRotation) * rangeRing + mapGPSY
+    setSignalColor(CHDarkmode)
+    px, py = math.sin(math.rad(-radarRotation)) * rangeRing + mapGPSX, math.cos(math.rad(-radarRotation)) * rangeRing + mapGPSY
 
     screen.drawLine(mapGPSX, mapGPSY, px, py)
     --#endregion

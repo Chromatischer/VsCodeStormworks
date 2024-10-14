@@ -3,13 +3,13 @@
 ---@param x ?number the x component of the vector
 ---@param y ?number the y component of the vector
 ---@param z ?number the z component of the vector
----@return Vec3 the new vector
+---@return Vec3 Vec3 a new Vec3 object
 ---@section Vec3
 function Vec3(x, y, z)
     return {
         x = x or 0,
         y = y or 0,
-        z = z or 0,
+        z = z or 0
     }
 end
 ---@endsection
@@ -28,23 +28,23 @@ end
 
 ---Divides the vector by a scalar and returns a new vector with the result
 ---@class Vec3
----@field divide function divides the vector by a scalar and returns a new vector with the result
+---@field scalarDivideVec3 function divides the vector by a scalar and returns a new vector with the result
 ---@param self Vec3 the vector
 ---@param scalar number the scalar
 ---@return Vec3 the new vector with the result
----@section divide
-function divide(self, scalar)
+---@section scalarDivideVec3
+function scalarDivideVec3(self, scalar)
     return Vec3(self.x / scalar, self.y / scalar, self.z / scalar)
 end
 ---@endsection
 
 ---Converts the vector to a Vec2 object
 ---@class Vec3
----@field toVec2 function converts the vector to a Vec2 object
+---@field vec3ToVec2 function converts the vector to a Vec2 object
 ---@param self Vec3 the vector
----@return Vec2 the vector as a Vec2 object
----@section toVec2
-function toVec2(self)
+---@return Vec2 Vec2 the vector as a Vec2 object
+---@section vec3ToVec2
+function vec3ToVec2(self)
     return Vec2(self.x, self.y)
 end
 ---@endsection
@@ -79,9 +79,7 @@ end
 ---@param other Vec3 the other vector
 ---@section addVec3
 function addVec3(self, other)
-    self.x = self.x + other.x
-    self.y = self.y + other.y
-    self.z = self.z + other.z
+    return Vec3(self.x + other.x, self.y + other.y, self.z + other.z)
 end
 ---@endsection
 
@@ -94,8 +92,19 @@ end
 ---@section sumTableVec3
 function sumTableVec3(self, table)
     for _, vector in ipairs(table) do
-        self = self:addVec3(vector)
+        self = addVec3(self, vector)
     end
     return self
+end
+---@endsection
+
+---Returns the string representation of the vector
+---@class Vec3
+---@field vec3ToString function returns the string representation of the vector
+---@param self Vec3 the vector
+---@return string the string representation of the vector
+---@section vec3ToString
+function vec3ToString(self)
+    return "x: " .. self.x .. ", y: " .. self.y .. ", z: " .. self.z
 end
 ---@endsection

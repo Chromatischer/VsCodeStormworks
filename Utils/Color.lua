@@ -13,7 +13,7 @@
 ---@param s ?number the saturation of the color (0-1)
 ---@param v ?number the value of the color (0-1)
 ---@return Color Color the color object
----@section color
+---@section Color
 function Color(r, g, b, h, s, v)
     return {
         r = r or 0, ---@type number the red of the color
@@ -31,14 +31,14 @@ end
 ---@param a number the red or hue of the color
 ---@param b number the green or saturation of the color
 ---@param c number the blue or value of the color
----@param setRGB boolean if the values are RGB or HSV
+---@param setRGB boolean if TRUE: RGB, if FALSE: HSV
 ---@return Color Color the color object
----@section color2
+---@section Color2
 function Color2(a, b, c, setRGB)
     if setRGB then
-        return color(a, b, c)
+        return Color(a, b, c)
     else
-        return color(nil, nil, nil, a, b, c)
+        return Color(nil, nil, nil, a, b, c)
     end
 end
 ---@endsection
@@ -64,7 +64,7 @@ function convertToHsv(self)
     end
 
     self.h, self.s, self.v = h / 360, (cmax == 0) and 0 or (delta / cmax), cmax
-    self.state = 0
+    return self
 end
 ---@endsection
 
@@ -97,7 +97,7 @@ function convertToRGB(self)
     self.r = (r + m) * 255
     self.g = (g + m) * 255
     self.b = (b + m) * 255
-    self.state = 1
+    return self
 end
 ---@endsection
 
@@ -109,7 +109,7 @@ end
 ---@section getRGB
 function getRGB(self)
     if self.state == 0 then
-        self:convertToRGB()
+        convertToRGB(self)
     end
     return {r = self.r, g = self.g, b = self.b}
 end
@@ -123,7 +123,7 @@ end
 ---@section getHSV
 function getHSV(self)
     if self.state == 1 then
-        self:convertToHsv()
+        convertToHsv(self)
     end
     return {h = self.h, s = self.s, v = self.v}
 end
@@ -211,8 +211,7 @@ end
 ---@return Color Color the new color object
 ---@section getWithModifiedValue
 function getWithModifiedValue(self, offset)
-    newColor = color(self.r, self.g, self.b)
-    newColor:convertToHsv()
+    newColor = convertToHsv(Color(self.r, self.g, self.b))
     newColor.v = self.v + offset
     return newColor
 end
@@ -225,7 +224,7 @@ end
 ---@section setAsScreenColor
 function setAsScreenColor(self)
     if self.state == 0 then
-        self:convertToRGB()
+        convertToRGB(self)
     end
     screen.setColor(self.r, self.g, self.b)
 end
@@ -239,8 +238,7 @@ end
 ---@return Color Color the new color object
 ---@section getWithModifiedHue
 function getWithModifiedHue(self, offset)
-    newColor = color(self.r, self.g, self.b)
-    newColor:convertToHsv()
+    newColor = convertToHsv(Color(self.r, self.g, self.b))
     newColor.h = self.h + offset % 1 --normalize the hue to 0-1
     return newColor
 end
