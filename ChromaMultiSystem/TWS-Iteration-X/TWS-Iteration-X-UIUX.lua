@@ -168,7 +168,7 @@ function onDraw()
     screen.drawCircle(mapGPSX, mapGPSY, rangeRing)
 
     setSignalColor(CHDarkmode)
-    px, py = math.sin(math.rad(-radarRotation)) * rangeRing + mapGPSX, math.cos(math.rad(-radarRotation)) * rangeRing + mapGPSY
+    px, py = math.sin(math.rad(vesselAngle-radarRotation)) * rangeRing + mapGPSX, math.cos(math.rad(vesselAngle-radarRotation)) * rangeRing + mapGPSY
 
     screen.drawLine(mapGPSX, mapGPSY, px, py)
     --#endregion

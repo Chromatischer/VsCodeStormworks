@@ -111,12 +111,12 @@ end
 
 ---Multiplies the vector by a scalar and returns a new vector with the result
 ---@class Vec2
----@field scalarMultiply function multiplies the vector by a scalar and returns a new vector with the result
+---@field scaleVec2 function multiplies the vector by a scalar and returns a new vector with the result
 ---@param self Vec2 the vector
 ---@param scalar number the scalar
 ---@return Vec2 the new vector with the result
----@section scalarMultiply
-function scalarMultiply(self, scalar)
+---@section scaleVec2
+function scaleVec2(self, scalar)
     return Vec2(self.x * scalar, self.y * scalar)
 end
 ---@endsection
@@ -188,5 +188,32 @@ end
 ---@section vec2ToVec3
 function vec2ToVec3(self, z)
     return Vec3(self.x, y, z or 0)
+end
+---@endsection
+
+---Converts a Vec2 in world space to screen space on the map and returns a new Vec2 in screen space
+---@class Vec2
+---@field toMapSpace function converts a Vec2 in world space to screen space on the map and returns a new Vec2 in screen space
+---@param self Vec2 the vector
+---@param screenCenterX number the world space x coordinate of the center of the map
+---@param screenCenterY number the world space y coordinate of the center of the map
+---@param zoom number the zoom level of the map
+---@param Swidth number the width of the screen
+---@param Sheight number the height of the screen
+---@return Vec2 Vec2 a new Vec2 object in screen space
+---@section toMapSpace
+function toMapSpace(self, screenCenterX, screenCenterY, zoom, Swidth, Sheight)
+    return Vec2(map.mapToScreen(screenCenterX, screenCenterY, zoom, Swidth, Sheight, self.x, self.y))
+end
+---@endsection
+
+---rounds the x and y components of the vector and returns a new Vec2
+---@class Vec2
+---@field roundVec2 function rounds the x and y components of the vector and returns a new Vec2
+---@param self Vec2 the vector
+---@return Vec2 Vec2 the new vector with the rounded x and y components
+---@section roundVec2
+function roundVec2(self)
+    return Vec2(math.round(self.x), math.round(self.y))
 end
 ---@endsection
