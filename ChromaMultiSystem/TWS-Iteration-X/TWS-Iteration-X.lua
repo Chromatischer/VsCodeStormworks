@@ -106,7 +106,7 @@ function onTick()
                     --rawRadarData[i + 1] = addVec3(radarData, scalarDivideVec3(subtractVec3(relPos, radarData), timeSinceDetected)) ---@type Vec3
                     --from my understanding, this is better because it actually filters out the noise and not just smooths it out
                 --#endregion
-                
+
                 --this is using the recursive average formula
                 --$$new = \frac{(n-1) * old + value}{n} $$
                 rawRadarData[i + 1] = scalarDivideVec3(addVec3(relPos, scaleVec3(rawRadarData[i + 1], timeSinceDetected - 1)), timeSinceDetected) ---@type Vec3

@@ -16,8 +16,7 @@
 ---@section VirtualMap
 function VirtualMap(centerX, centerY, screenWidth, screenHeight, maxRadius, isDepressed)
     return {
-        centerX = centerX, ---@type number the global X center of the map
-        centerY = centerY, ---@type number the global Y center of the map
+        globalCenter = Vec2(centerX, centerY), ---@type Vec2 the global center of the map
         screenWidth = screenWidth, ---@type number the width of the screen in pixels
         screenHeight = screenHeight, ---@type number the height of the screen in pixels
         screenRadius = math.min(screenWidth, screenHeight), ---@type number the radius of the screen in pixels
@@ -31,14 +30,22 @@ end
 ---@class VirtualMap
 ---@field toScreenSpace function convert global coordinates to on screen coordinates
 ---@param self VirtualMap the virtual map object
----@param globalX number the global X coordinate to convert
----@param globalY number the global Y coordinate to convert
+---@param global Vec2 the global coordinates to convert
 ---@param angleUP ?number the angle to be up, nil for North UP
----@return number, number number the X and Y screen coordinates
+---@return Vec2 Vec2 on screen coordinates in pixels
 ---@section toScreenSpace
-function toScreenSpace(self, globalX, globalY, angleUP)
+function toScreenSpace(self, global, angleUP)
     ang = angleUP and math.rad(angleUP) or 0
-
-    return (globalX - self.centerX) * math.sin(angle) / self.maxRadius * self.screenRadius, (globalY - self.centerY) * math.cos(angle) / self.maxRadius * self.screenRadius - (self.isDepressed and self.screenHeight / 3 or 0)
+    --convert from global to local
+    relative = subtract(global, self.globalCenter)
+    --rotate
+    relDistance = vec2length(relative)
+    relAngle = angleTo(self.globalCenter, global)
+    rotated = ang + relAngle
+    --convert to screen space
+    screenDistance = relDistance / self.maxRadius * self.screenRadius --convert to pixels
+    screenX = self.screenWidth / 2 + screenDistance * math.sin(rotated)
+    screenY = screenDistance * math.cos(rotated) - (self.isDepressed and self.screenHeight / 2 + self.screenHeight / 3 or self.screenHeight / 2)
+    return Vec2(screenX, screenY)
 end
 ---@endsection

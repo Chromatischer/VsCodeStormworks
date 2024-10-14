@@ -187,9 +187,10 @@ end
 ---@class Color
 ---@field genNewHue function generate a new hue for the color at random
 ---@param self Color the color object
+---@return Color Color the new color object
 ---@section genNewHue
 function genNewHue(self)
-    self.h = math.random()
+    return Color(self.r, self.g, self.b, math.random(), self.s, self.v)
 end
 
 ---Modify the value of the color

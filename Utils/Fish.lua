@@ -22,14 +22,74 @@
 ---@section Fish
 function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
     return {
-        globalAngle = (compas + yaw) % 360, ---@type number the global angle of the fish
-        globalX = gpsX + (math.sin(globalAngle) * distance), ---@type number the global X position of the fish
-        globalY = gpsY + (math.cos(globalAngle) * distance), ---@type number the global Y position of the fish
+        angle = (compas + yaw) % 360, ---@type number the global angle of the fish
+        globalX = gpsX + (math.sin((compas + yaw) % 360) * distance), ---@type number the global X position of the fish
+        globalY = gpsY + (math.cos((compas + yaw) % 360) * distance), ---@type number the global Y position of the fish
         globalZ = gpsZ - depth, ---@type number the global Z position of the fish
         relDepth = depth, ---@type number the relative depth of the fish
-        color = Color2(0, 0.5, 0.9, false):genNewHue(), ---@type Color the color of the fish generated randomly with a set value and saturation
+        color = genNewHue(Color2(0, 1, 0.9, false)), ---@type Color the color of the fish generated randomly with a set value and saturation
         age = 100, ---@type number the age of the fish
     }
+end
+---@endsection
+
+---Generate a new school object
+---@class School
+---@field position Vec2 the position of the school
+---@field size number the size of the school
+---@field color Color the color of the school
+---@field age number the age of the school
+---@param fish Fish the fish to create the school from
+---@return School School the school object
+---@section School
+function School(fish)
+    return {
+        position = getAsVec3(fish),
+        color = fish.color,
+        age = 0,
+        fishes = {fish},
+    }
+end
+---@endsection
+
+---Add fishes to schools
+---@param schools table<School> the schools to add the fishes to
+---@param fishes table<Fish> the fishes to add to the schools
+---@return table<School> School the schools with the added fishes
+---@return table<Fish> Fish the fishes that were not added to the schools
+---@section addFishesToSchools
+function addFishesToSchools(schools, fishes)
+    --add fishes to schools if they are close enough
+    --do not add if the fish is already in this school from a previous iteration
+    for i = #schools, 1, -1 do
+        school = schools[i]
+        for o = #fishes, 1, -1 do
+            fish = fishes[o]
+            if distanceToVec2(school.position, vec3ToVec2(getAsVec3(fish))) < 10 then
+                if not fishPartOfSchool(fish, school) then
+                    table.insert(school.fishes, fish)
+                    table.remove(fishes, o)
+                end
+            end
+        end
+    end
+    return schools, fishes
+end
+---@endsection
+
+---Returns true if the fish is part of the school
+---@param self Fish the fish object
+---@param school School the school object
+---@return boolean True if the fish is part of the school
+---@section fishPartOfSchool
+function fishPartOfSchool(self, school)
+    --Check for distance to all fishes in the school
+    for _, fish in ipairs(school.fishes) do
+        if distanceToVec2(school.position, vec3ToVec2(getAsVec3(fish))) < 2 then
+            return true
+        end
+    end
+    return false
 end
 ---@endsection
 
@@ -41,10 +101,10 @@ end
 ---@param vesselAngle number the angle of the vessel (deg)
 ---@section drawSpotToScreen
 function drawSpotToScreen(self, virtualMap, vesselAngle, isDarkMode)
-    screenX, screenY = virtualMap:toScreenSpace(self.globalX, self.globalY, vesselAngle)
-    self.color:getWithModifiedValue(isDarkMode and -0.3 or 0):setAsScreenColor()
+    screenX, screenY = toScreenSpace(virtualMap, self.globalX, self.globalY, vesselAngle)
+    setAsScreenColor(getWithModifiedValue(self.color, isDarkMode and -0.3 or 0))
     screen.drawCircleF(screenX, screenY, 6)
-    self.color:getWithModifiedValue(isDarkMode and -0.5 or -0.2):setAsScreenColor()
+    setAsScreenColor(getWithModifiedValue(self.color, isDarkMode and -0.5 or -0.2))
     screen.drawCircle(screenX, screenY, 6)
     setColorGrey(0.7, isDarkMode)
     screen.drawText(screenX - 1, screenY - 1, self.relDepth)
@@ -108,10 +168,10 @@ end
 
 ---Increase the age of the fish by 1
 ---@class Fish
----@field update function increase the age of the fish by 1
+---@field updateFish function increase the age of the fish by 1
 ---@param self Fish the fish object
----@section update
-function update(self)
+---@section updateFish
+function updateFish(self)
     self.age = self.age - 1
 end
 ---@endsection

@@ -60,9 +60,9 @@ require("Utils.Vectors.vec3")
 require("Utils.Vectors.vec2")
 
 allFish = {} ---@type table<Fish>
-schools = {} ---@type table<table<globalX, globalX, color, size>>
+schools = {} ---@type table<table<Vec2, number, Color, number>>
 virtualMap = nil ---@type VirtualMap
-screenCenterX, screenCenterY = 0, 0
+screenCenter = Vec2(0, 0)
 selfID = 0
 
 ticks = 0
@@ -86,67 +86,49 @@ function onTick()
     if input.getBool(5) then --check that there is a fish detected you fucking twat
         fish = Fish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
         table.insert(allFish, fish)
-        for i = #allFish, 1, -1 do
-            fish = allFish[i] ---@type Fish
-            fish:update()
-            if fish:isDead() then -- Oh no, the fish is dead!
-                table.remove(allFish, i)
-            end
-        end
-
-        --group the fishes into groups and add to the spots array, base the size on the amount of fishes in the "school"
-        tempFishes = allFish ---@type table<Fish>
 
         --Idea: iterate over the full tempFishes array, then again, look for distances smaller then a pre-defined value, delete these fishes from the array, continue iterating
-        for i = #tempFishes, 1, -1 do
-            orderFish = tempFishes[i] ---@type Fish
-            for o = #tempFishes, 1, -1 do
-                questFish = tempFishes[o] ---@type Fish
-                if orderFish and questFish then --check that the fish still exists and is not nil
-                    if orderFish:getAsVec3():distanceTo(questFish:getAsVec3()) < 10 then --if the distance between the two fishes is smaller than 10m
-                        schools[i] = {orderFish.globalX, orderFish.globalY, orderFish.color, schools[i] and schools[i][4] + 1 or 1} --add the fish to the school and increase the size by 1 if the school already exists
-                        table.remove(tempFishes, o) --remove the fish from the tempFishes array
-                    end
-                end
-            end
+        schools, allFish = addFishesToSchools(schools, allFish)
+
+        for i = #allFish, 1, -1 do
+            fish = allFish[i] ---@type Fish
+            table.insert(schools, School(fish))
+            table.remove(allFish, i)
         end
     end
 
-    --#region Setting values on Boot
-    if ticks < 10 then
-        screenCenterX, screenCenterY = gpsX, gpsY
+    for i = 1, #schools do
+        school = schools[i]
+        school.age = school.age + 1
+        if school.age > 100 then
+            table.remove(schools, i)
+        end
     end
-    --#endregion
+
+    screenCenter = Vec2(gpsX, gpsY)
 end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    virtualMap = VirtualMap(screenCenterX, screenCenterY, Swidth, Sheight, 100, false)
+    virtualMap = VirtualMap(screenCenter.x, screenCenter.y, Swidth, Sheight, 100, false)
 
-    onScreenX, onScreenY = virtualMap:toScreenSpace(screenCenterX, screenCenterY, vesselAngle)
-    testPointNorthX, testPointNorthY = virtualMap:toScreenSpace(screenCenterX, screenCenterY + 10, vesselAngle)
-    screen.drawLine(onScreenX, onScreenY, testPointNorthX, testPointNorthY)
-    drawDirectionIndicator(onScreenX, onScreenY, CHDarkmode, 0)
-
-    --for _, fish in ipairs(allFish) do
-    --    if fish then -- Oh no, there is no fish!
-    --        fish = fish ---@type Fish
-    --        fish:drawSpotToScreen(virtualMap, vesselAngle)
-    --    end
-    --end
+    onScreen = toScreenSpace(virtualMap, screenCenter, vesselAngle)
+    testPointNorthX, testPointNorthY = toScreenSpace(virtualMap, addY(screenCenter, 10), vesselAngle)
+    screen.setColor(255, 255, 255)
+    screen.drawLine(onScreen.x, onScreen.y, testPointNorthX, testPointNorthY)
+    drawDirectionIndicator(onScreen.x, onScreen.y, CHDarkmode, 0)
 
     for _, school in ipairs(schools) do
         if school then
-            schX, schY = virtualMap:toScreenSpace(school[1], school[2], vesselAngle)
-            color = school[3] ---@type Color
-            size = school[4] * 3 ---@type number
-            color:getWithModifiedValue(CHDarkmode and -0.3 or 0):setAsScreenColor()
-            screen.drawCircleF(schX, schY, size)
-            color:getWithModifiedValue(CHDarkmode and -0.5 or -0.2):setAsScreenColor()
-            screen.drawCircle(schX, schY, size)
+            schPos = toScreenSpace(virtualMap, school.position, vesselAngle)
+            color = school.color ---@type Color
+            size = #school.fishes * 3 ---@type number
+            screen.setColor(255, 255, 255)
+            screen.drawCircleF(schPos.x, schPos.y, size)
+            screen.drawCircle(schPos.x, schPos.y, size)
 
             setColorGrey(0.7, CHDarkmode)
-            screen.drawText(schX - 1, schY - 1, size)
+            screen.drawText(schPos.x - 1, schPos.y - 1, size)
         end
     end
 
