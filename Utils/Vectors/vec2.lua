@@ -150,7 +150,7 @@ end
 ---@field addY function adds a scalar to the y component of the vector and returns a new vector with the result
 ---@param self Vec2 the vector
 ---@param y number the scalar
----@return Vec2 the new vector with the result
+---@return Vec2 Vec2 a new vector with the result of adding the scalar to the y component
 ---@section addY
 function addY(self, y)
     return Vec2(self.x, self.y + y)

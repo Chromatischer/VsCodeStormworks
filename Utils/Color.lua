@@ -190,7 +190,7 @@ end
 ---@return Color Color the new color object
 ---@section genNewHue
 function genNewHue(self)
-    return Color(self.r, self.g, self.b, math.random(), self.s, self.v)
+    return Color2(math.random(), self.s, self.v, false)
 end
 
 ---Modify the value of the color

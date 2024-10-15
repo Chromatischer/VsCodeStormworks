@@ -54,7 +54,7 @@ end
 ---@param isDarkMode boolean DarkMode
 ---@section setColorGrey
 function setColorGrey(value, isDarkMode)
-    setAsScreenColor(Color2(0, 0, isDarkMode and math.max(value - 0.25, 0.01) or value, false))
+    setAsScreenColor(Color2(0, 0, isDarkMode and math.max(value - 0.25, 0.005) or value, false))
 end
 ---@endsection
 

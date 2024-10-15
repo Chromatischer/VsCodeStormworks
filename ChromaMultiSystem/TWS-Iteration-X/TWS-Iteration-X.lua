@@ -149,7 +149,7 @@ function onDraw()
     for _, track in ipairs(tracks) do
         --to draw is a triangle that points in the direction of the target with a line at the top in the direction of travel and the length being the estimated position at the current time!
         track = track ---@type Track
-        setAsScreenColor(Color2(0.9, 0.7, 0.7, false))
+        setAsScreenColor(Color2(0, 0.8, 0.45, false))
         --Draw a circle, witht the radius being 5 and add a line from the cricles circumference to the estimated position of the target
         radius = 3
         trackPos = toMapSpace(vec3ToVec2(getLatest(track)), screenCenterX, screenCenterY, finalZoom, Swidth, Sheight)

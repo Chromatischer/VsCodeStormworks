@@ -1,15 +1,9 @@
 ---Generate a new fish object
 ---@class Fish
----@module "Utils.Color"
----@module "Utils.VirtualMapUtils"
----@module "Utils.Vectors.vec2"
----@module "Utils.Vectors.vec3"
----@field globalAngle number the global angle of the fish
----@field globalX number the global X position of the fish
----@field globalY number the global Y position of the fish
----@field globalZ number the global Z position of the fish
+---@field angle number the global angle of the fish
+---@field globalPosition Vec3 the global position of the fish
 ---@field relDepth number the relative depth of the fish
----@field color Color the color of the fish generated randomly with a set value and saturation
+---@field color Color the color of the fish
 ---@field age number the age of the fish
 ---@param gpsX number the GPS X position of the vessel
 ---@param gpsY number the GPS Y position of the vessel
@@ -23,9 +17,7 @@
 function Fish(gpsX, gpsY, gpsZ, compas, yaw, distance, depth)
     return {
         angle = (compas + yaw) % 360, ---@type number the global angle of the fish
-        globalX = gpsX + (math.sin((compas + yaw) % 360) * distance), ---@type number the global X position of the fish
-        globalY = gpsY + (math.cos((compas + yaw) % 360) * distance), ---@type number the global Y position of the fish
-        globalZ = gpsZ - depth, ---@type number the global Z position of the fish
+        globalPosition = Vec3(gpsX + (math.sin((compas + yaw) % 360) * distance), gpsY + (math.cos((compas + yaw) % 360) * distance), gpsZ - depth), ---@type Vec3 the global position of the fish
         relDepth = depth, ---@type number the relative depth of the fish
         color = genNewHue(Color2(0, 1, 0.9, false)), ---@type Color the color of the fish generated randomly with a set value and saturation
         age = 100, ---@type number the age of the fish
@@ -101,24 +93,13 @@ end
 ---@param vesselAngle number the angle of the vessel (deg)
 ---@section drawSpotToScreen
 function drawSpotToScreen(self, virtualMap, vesselAngle, isDarkMode)
-    screenX, screenY = toScreenSpace(virtualMap, self.globalX, self.globalY, vesselAngle)
-    setAsScreenColor(getWithModifiedValue(self.color, isDarkMode and -0.3 or 0))
-    screen.drawCircleF(screenX, screenY, 6)
-    setAsScreenColor(getWithModifiedValue(self.color, isDarkMode and -0.5 or -0.2))
-    screen.drawCircle(screenX, screenY, 6)
-    setColorGrey(0.7, isDarkMode)
-    screen.drawText(screenX - 1, screenY - 1, self.relDepth)
-end
----@endsection
-
----Returns the global position of the fish
----@class Fish
----@field getGlobalPosition function returns the global position of the fish
----@param self Fish the fish object
----@return table the global position of the fish
----@section getGlobalPosition
-function getGlobalPosition(self)
-    return {x = self.globalX, y = self.globalY, z = self.globalZ}
+    onScreen = toScreenSpace(virtualMap, vec3ToVec2(self.globalPosition), vesselAngle)
+    setAsScreenColor(self.color)
+    screen.drawCircleF(onScreen.x, onScreen.y, 6)
+    setAsScreenColor(self.color)
+    screen.drawCircle(onScreen.x, onScreen.y, 6)
+    --setColorGrey(0.7, isDarkMode)
+    --screen.drawText(onSreen.x - 1, onSreen.y - 1, self.relDepth)
 end
 ---@endsection
 
@@ -129,7 +110,7 @@ end
 ---@return Vec3 the global position of the fish as a Vec3 object
 ---@section getAsVec3
 function getAsVec3(self)
-    return Vec3(self.globalX, self.globalY, self.globalZ)
+    return self.globalPosition
 end
 ---@endsection
 
@@ -151,7 +132,7 @@ end
 ---@return number the global depth of the fish (m)
 ---@section getGlobalDepth
 function getGlobalDepth(self)
-    return self.relDepth
+    return self.globalPosition.z
 end
 ---@endsection
 
@@ -173,6 +154,7 @@ end
 ---@section updateFish
 function updateFish(self)
     self.age = self.age - 1
+    return self
 end
 ---@endsection
 

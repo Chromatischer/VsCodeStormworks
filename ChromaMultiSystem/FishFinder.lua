@@ -86,22 +86,12 @@ function onTick()
     if input.getBool(5) then --check that there is a fish detected you fucking twat
         fish = Fish(gpsX, gpsY, gpsZ, compas, (input.getNumber(12) * 360) + 180, input.getNumber(13), input.getNumber(14))
         table.insert(allFish, fish)
-
-        --Idea: iterate over the full tempFishes array, then again, look for distances smaller then a pre-defined value, delete these fishes from the array, continue iterating
-        schools, allFish = addFishesToSchools(schools, allFish)
-
-        for i = #allFish, 1, -1 do
-            fish = allFish[i] ---@type Fish
-            table.insert(schools, School(fish))
-            table.remove(allFish, i)
-        end
     end
 
-    for i = 1, #schools do
-        school = schools[i]
-        school.age = school.age + 1
-        if school.age > 100 then
-            table.remove(schools, i)
+    for i = #allFish, 1, -1 do
+        allFish[i] = updateFish(allFish[i])
+        if isDead(allFish[i]) then
+            table.remove(allFish, i)
         end
     end
 
@@ -110,26 +100,19 @@ end
 
 function onDraw()
     Swidth, Sheight = screen.getWidth(), screen.getHeight()
-    virtualMap = VirtualMap(screenCenter.x, screenCenter.y, Swidth, Sheight, 100, false)
+    virtualMap = VirtualMap(screenCenter.x, screenCenter.y, Swidth, Sheight, 200, false)
 
     onScreen = toScreenSpace(virtualMap, screenCenter, vesselAngle)
-    testPointNorthX, testPointNorthY = toScreenSpace(virtualMap, addY(screenCenter, 10), vesselAngle)
+    testPoint = toScreenSpace(virtualMap, addY(screenCenter, 10), vesselAngle)
     screen.setColor(255, 255, 255)
-    screen.drawLine(onScreen.x, onScreen.y, testPointNorthX, testPointNorthY)
+    screen.drawLine(onScreen.x, onScreen.y, testPoint.x, testPoint.y)
     drawDirectionIndicator(onScreen.x, onScreen.y, CHDarkmode, 0)
 
-    for _, school in ipairs(schools) do
-        if school then
-            schPos = toScreenSpace(virtualMap, school.position, vesselAngle)
-            color = school.color ---@type Color
-            size = #school.fishes * 3 ---@type number
-            screen.setColor(255, 255, 255)
-            screen.drawCircleF(schPos.x, schPos.y, size)
-            screen.drawCircle(schPos.x, schPos.y, size)
-
-            setColorGrey(0.7, CHDarkmode)
-            screen.drawText(schPos.x - 1, schPos.y - 1, size)
-        end
+    for _, fish in ipairs(allFish) do
+        fishPos = toScreenSpace(virtualMap, vec3ToVec2(getAsVec3(fish)), vesselAngle)
+        drawSpotToScreen(fish, virtualMap, vesselAngle, CHDarkmode)
+        setColorGrey(0.9, CHDarkmode)
+        screen.drawText(fishPos.x, fishPos.y, fish.age)
     end
 
     setColorGrey(0.9, CHDarkmode)
