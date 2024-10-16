@@ -28,7 +28,7 @@ require("Utils.Radar.BestTrackAlgorithm")
 require("Utils.Radar.radarToGlobalCoordinates")
 require("Utils.Color")
 require("Utils.DrawAddons")
-require("Utils.Vectors.vec2") --TODO: check for compilation mistakes in the compression, as the vec2 and vec3 have similar function names
+require("Utils.Vectors.vec2")
 require("Utils.Vectors.vec3")
 
 --Will use 3 simultaneous contacts for now... so that means: 3 azimuths, 3 elevations, 3 distances, 3 contact statuses
@@ -55,10 +55,10 @@ lastRadarRotation = 0
 lastRadarDelta = 0
 radarMovingPositive = true
 tracks = {} ---@type table<Track> Tracks
-contacts = {} ---@type table<Vec3> Contacts
-rawRadarData = {Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0)} ---@type table<Vec3> Raw Radar Data
+contacts = {} ---@type table<Vec3> Contacts in world space
+rawRadarData = {Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0)} ---@type table<Vec3> Raw Radar Data in relative space
 SelfIsSelected = false
-reachedLimit = false
+reachedLimit = false ---@type boolean True if the radar has reached the limit of the rotation and contacts are being flushed
 screenCenterX = 0
 screenCenterY = 0
 gpsX, gpxY, gpsZ = 0, 0, 0
@@ -91,6 +91,7 @@ function onTick()
     if SelfIsSelected then
         dataOffset = 11
         boolOffset = 4
+        --#region Contact generation and averaging
         for i = 0, 2 do
             distance = input.getNumber(i * 4 + dataOffset)
             targetDetected = input.getBool(i + boolOffset)
@@ -116,30 +117,32 @@ function onTick()
                 rawRadarData[i + 1] = Vec3(0, 0, 0) --Is this right? Because then it will take the 0, 0, 0 into account for the average, which is bad?
             end
         end
+        --#endregion
+        
+        --Ok, so what I have done now is remove the check for having reached the limit because it seems pointless in theory
+        --The target tracking works the same way with and without it the difference being that it now updates instantly
+        --This could have caused issues if I had single assignment as a relationship of 1:1 between contacts and tracks
+        --But since I have multi-assignment, it should work fine and the exact same way as before but with less delay
 
-        radarIsContinousRotation = property.getBool("Radar Mode: ")
-        if (radarRotation % 360 <= 2 and radarIsContinousRotation) then --checks that the radar is at the start of the rotation 
-            reachedLimit = true
-            --Delete dead tracks
-            for i = #tracks, 1, -1 do
-                if tracks[i].tSinceUpdate > trackMaxUpdateTicks then
-                    table.remove(tracks, i)
-                end
-            end
+        --TODO: check if this is the problem for not being able to track at 0 degrees
 
-            --Update existing tracks
-            tracks, contacts = bestTrackDoubleAssignements(contacts, tracks, trackMaxGroupDistance)
-
-            --Create new tracks from remaining contacts
-            for i = #contacts, 1, -1 do
-                table.insert(tracks, Track(contacts[i]))
-                table.remove(contacts, i) --Remove the contact from the contacts table
+        --Delete dead tracks
+        for i = #tracks, 1, -1 do
+            if tracks[i].tSinceUpdate > trackMaxUpdateTicks then
+                table.remove(tracks, i)
             end
         end
 
-        for _, track in ipairs(tracks) do
-            update(track)
+        --Update existing tracks
+        tracks, contacts = bestTrackDoubleAssignements(contacts, tracks, trackMaxGroupDistance)
+
+        --Create new tracks from remaining contacts
+        for i = #contacts, 1, -1 do
+            table.insert(tracks, Track(contacts[i]))
+            table.remove(contacts, i) --Remove the contact from the contacts table
         end
+
+        tracks = updateTrackT(tracks) --Use my own build function you stupid...
     end
 end
 
