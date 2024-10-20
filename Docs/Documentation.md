@@ -15,8 +15,8 @@ Table of contents:
   - [How to: Finding a Transponder signal](#how-to-finding-a-transponder-signal)
   - [Multi-screen Controller](#multi-screen-controller)
   - [New TWS System and algorithm](#new-tws-system-and-algorithm)
-
-
+  - [Sonar](#sonar)
+  - [Transponder Trilaterator](#transponder-trilaterator)
 
 ## Interactive Map 5x3
 
@@ -667,3 +667,169 @@ The basic idea is the same as before, doing a step by step approach like this:
 
 The basic Idea behind the Update, is that you need to cross reference every single new Data point with every single track. Then choose the one with the smallest distance, that is larger then a threshold T. This can be accomplished using a two dimensional matrix, where you have rows of new data and columns of tracks and the distance as the value.
 Using this method, you can then: iterate backwards through the array and set a flag to the updated tracks, so that they won't be updated again.
+
+```lua
+function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
+    -- Each contact should be assigned to only one track, but each track can have multiple contacts.
+    -- This is achieved by iterating over tracks first, then contacts.
+    -- Once a contact is assigned, it is removed from the contacts array, preventing multiple assignments.
+    -- The algorithm calculates distances between tracks and contacts, assigns contacts to tracks if within maxDistance, and updates tracks.
+    for i = 1, #tracks do
+        track = tracks[i] ---@type Track
+        isUpdated = false
+        for j = #contacts, 1, -1 do
+            contact = contacts[j] ---@type Vec3
+            conditionAtPrevious = distanceToVec3(getLatest(track), contact) < maxDistance
+            --Calculates the estimated position of the contact at the current time, converts to vec3 with z being latest recorded z
+            --Checks if the distance between the contact and the best track is less than the maximum distance
+            conditionAtPredicted = distanceToVec3(vec2ToVec3(calcEstimatePosition(track), getLatest(track).z), contact) < maxDistance
+            if conditionAtPrevious or conditionAtPredicted then --check if the distance between the contact and the best track is less than the maximum distance
+                table.insert(track.coordinates, contact)
+                isUpdated = true
+                table.remove(contacts, j) --remove the contact from the contacts array as it has been assigned to a track
+            end
+        end
+        if isUpdated then
+            calcAngle(track)
+            calcSpeed(track)
+            dataUpdate(track) --maybe this will solve the problem (it didn't but it doesn't hurt so I'll leve it as is)
+        end
+    end
+
+    return tracks, contacts --returns the updated tracks and the remaining contacts
+end
+```
+This is the code, that does that. Matching each contact with a track in the relationship n:1 so that one contact can be assigned to multiple tracks, but one track can only be assigned to one contact. This is done by iterating over the tracks first and then over the contacts. If a contact is assigned to a track, it is removed from the contacts array, so that it can't be assigned to another track. This is done to prevent multiple assignments.
+
+```lua
+for i = 0, 2 do
+    distance = input.getNumber(i * 4 + dataOffset)
+    targetDetected = input.getBool(i + boolOffset)
+    timeSinceDetected = input.getNumber(i * 4 + 3 + dataOffset)
+    relPos = radarToRelativeVec3(distance, input.getNumber(i * 4 + 1 + dataOffset), input.getNumber(i * 4 + 2 + dataOffset), compas, input.getNumber(13))
+    if timeSinceDetected ~= 0 then
+        --#region doc stuff
+            --see: https://discord.com/channels/357480372084408322/578586360336875520/1295276857482281020 (message by smithy3141)
+
+            --this is sithy's low pass filter formula
+            --low pass filter formula (filters out noise gradually)
+            --$$new = old + \frac{value - old}{n}$$
+            --rawRadarData[i + 1] = addVec3(radarData, scalarDivideVec3(subtractVec3(relPos, radarData), timeSinceDetected)) ---@type Vec3
+            --from my understanding, this is better because it actually filters out the noise and not just smooths it out
+        --#endregion
+
+        --this is using the recursive average formula
+        --$$new = \frac{(n-1) * old + value}{n} $$
+        rawRadarData[i + 1] = scalarDivideVec3(addVec3(relPos, scaleVec3(rawRadarData[i + 1], timeSinceDetected - 1)), timeSinceDetected) ---@type Vec3
+    elseif vec3length(relPos) > 50 then
+        --Convert the relative position to a global position and add it to the contacts table
+        table.insert(contacts, addVec3(relPos, Vec3(gpsX, gpsY, gpsZ)))
+        rawRadarData[i + 1] = Vec3(0, 0, 0) --Is this right? Because then it will take the 0, 0, 0 into account for the average, which is bad?
+    end
+end
+```
+This code collects as well as prepares the data for the matching algorithm. It takes the raw data from the radar and converts it into relative coordinates. If the time since the last detection is not 0, it uses a recursive average formula to smooth out the data. If the time since the last detection is 0, it adds the data to the contacts array, so that it can be matched with the tracks.
+
+Averaging by time since detection is done using a recursive average formula, which is better than a low pass filter, because it actually filters out the noise and not just smooths it out.
+
+[[return to Top]](#documentation-chroma-systems-lua-projects)
+
+## Sonar
+
+Research about the Sonar will be documented here
+
+From what I was able to get the max range of the small sonar is 60km
+
+The speed of sound is 700m/s.
+
+From that the following equation can be derived:
+
+$$\text{distance} = \text{time} * 700\frac{m}{s}$$
+
+Or the time between pings if the target distance is known:
+
+$$\text{time} = \frac{\text{distance}}{700\frac{m}{s}}$$
+
+In lua this would look like this:
+
+```lua
+---Calculates the time it takes for sound to travel a certain distance
+---@param distance number Distance in meters
+---@return number Time in seconds
+---@section timeToWait
+function timeToWait(distance)
+    return distance / SPEED_OF_SOUND
+end
+---@endsection
+
+---Calculates the distance from a certain time that the sound has traveled
+---@param time number Time in seconds
+---@return number Distance in meters
+---@section distanceFromTime
+function distanceFromTime(time)
+    return time * SPEED_OF_SOUND
+end
+---@endsection
+```
+
+When a certain max distance is selected, the time between pings can be calculated.
+
+[[return to Top]](#documentation-chroma-systems-lua-projects)
+
+
+## Transponder Trilaterator
+
+So, what I have done previously, that was wrong was to try and find intersections of circles when I should have been using trilateration. The idea is to use the distances to the beacons to find the origin point. This is done by minimizing the mean squared error between the distances and the calculated distances from the origin point. This is done using a gradient descend loop. The implementation of this can be found in the TrilaterationUtils file.
+
+Because of the limitations of stormworks, the circles cannot intersect fully, this leads to any attempt of finding the origin point to be off to the side of the vessel. This is why the trilateration method is the best way to go.
+
+Right now the accuracy is about 50-100m when working with the maximum amount of beacons, the accuracy seems to decrease when using more beacons. I don't exactly know, why this could be but it is.
+
+Having an accuracy of 100m at a distance of 6000m is very good and allows to find the origin point with a high degree of accuracy.
+
+Together with the radar, this is really powerful and can be used to find a vessel in the middle of the ocean with pin point accuracy.
+
+I currently have the following settings applied:
+- 0.01 learn rate
+- 5m threshold
+- 500 iterations max
+- with 20 beacons
+- distance of at least 150m
+- starting point beeing the average of all beacons
+
+Read about it [Position and Trilateration](https://www.alanzucconi.com/2017/03/13/positioning-and-trilateration/), [Gradient Descent Loops](https://en.wikipedia.org/wiki/Gradient_descent)
+
+In code this looks as follows:
+```lua
+function gradientDescendLoop(learnRate, threshold, max_iterations, beacons, startPoint)
+    local numberOfIterations = 0
+    for i = 1, max_iterations do
+        mse = calcMeanSquaredError(startPoint, beacons)
+        local gradX, gradY = 0, 0
+        for _, beacon in ipairs(beacons) do
+            local predicedDistance = distance(startPoint, beacon)
+            if predicedDistance ~= 0 then
+                local diff = predicedDistance - beacon.distance
+                gradX = gradX + (diff * (startPoint.x - beacon.x) / predicedDistance)
+                gradY = gradY + (diff * (startPoint.y - beacon.y) / predicedDistance)
+            end
+        end
+
+        gradX = (#beacons * gradX) / 2
+        gradY = (#beacons * gradY) / 2
+
+        startPoint.x = startPoint.x - learnRate * gradX --seems to be a bug in the code of the highlighter and not me...
+        startPoint.y = startPoint.y - learnRate * gradY --take a look at this: https://github.com/LuaLS/lua-language-server/issues/2746 I think!
+
+        numberOfIterations = numberOfIterations + 1
+        if math.abs(gradX) < threshold and math.abs(gradY) < threshold then
+            break
+        end
+    end
+    return startPoint, mse, numberOfIterations
+end
+```
+
+I sadly don't know where I have this exact implementation from. Maybe I wrote it myself? IDK though...
+
+[[return to Top]](#documentation-chroma-systems-lua-projects)
