@@ -195,11 +195,11 @@ end
 ---@endsection
 
 ---Assings multiple contacts to a single track but only one track to any single contact
----@param contacts table<table<x, y, z>> Table of contacts
+---@param contacts table<Vec3> Table of contacts
 ---@param tracks table<Track> Table of tracks
 ---@param maxDistance number Maximum distance between a contact and a track
 ---@return table<Track> Tracks Updated tracks
----@return table<table<x, y, z>> Contacts Remaining contacts
+---@return table<Vec3> Contacts Remaining contacts
 ---@section bestTrackDoubleAssignements
 function bestTrackDoubleAssignements(contacts, tracks, maxDistance)
     -- Each contact should be assigned to only one track, but each track can have multiple contacts.
