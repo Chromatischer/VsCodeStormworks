@@ -48,14 +48,14 @@ end
 ---@return number numberOfIterations the number of iterations it took to find the best center coordinate before stopping because of the threshold
 ---@section gradientDescendLoop
 function gradientDescendLoop(learnRate, threshold, max_iterations, beacons, startPoint)
-    local numberOfIterations = 0
+    numberOfIterations = 0
     for i = 1, max_iterations do
         mse = calcMeanSquaredError(startPoint, beacons)
-        local gradX, gradY = 0, 0
+        gradX, gradY = 0, 0
         for _, beacon in ipairs(beacons) do
-            local predicedDistance = distance(startPoint, beacon)
+            predicedDistance = distance(startPoint, beacon)
             if predicedDistance ~= 0 then
-                local diff = predicedDistance - beacon.distance
+                diff = predicedDistance - beacon.distance
                 gradX = gradX + (diff * (startPoint.x - beacon.x) / predicedDistance)
                 gradY = gradY + (diff * (startPoint.y - beacon.y) / predicedDistance)
             end

@@ -158,10 +158,4 @@ function onDraw()
         toPoint = transformScalar(trackPos, track.angle, radius + track.speed * 30)
         screen.drawLine(startPoint.x, startPoint.y, toPoint.x, toPoint.y)
     end
-
-    if reachedLimit then
-        screen.setColor(255, 0, 0)
-        screen.drawRect(0, 0, Swidth, Sheight)
-        reachedLimit = false
-    end
 end

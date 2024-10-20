@@ -6,7 +6,6 @@
 ---@param a table the 2D table to get the optimization of
 ---@return table table the optimal arrangement for minimal cost
 ---@section hungarianAlgorithm
----@deprecated use BestTrack instead because thie is too many tokens for too little use
 function hungarianAlgorithm(a)
     HUGE = 9e3
     m = #a      --rows
@@ -105,6 +104,18 @@ function normalizeTable(a)
 end
 ---@endsection
 
+function stripTable(a)
+    --Reverse the normalization of the table
+
+    --remove the leading row of zeros
+    table.remove(a, 1)
+    for i = 1, #a do
+        --remove the leading column of zeros
+        table.remove(a[i], 1)
+    end
+    return a
+end
+
 ---small helper function to print a table to the console
 ---@param t table 2D table with rows and columns as well as saved values
 ---@section printTable
@@ -119,14 +130,25 @@ function printTable(t)
 end
 ---@endsection
 
----will print the result of a hungarianAlgorithm execution to the console
----@param hungarianRes table output of the hungarianAlgorithm
----@param referenceTable table the input table to the hungarianAlgorithm
+---print the results of the hungarianAlgorithm mark the selected values with console colors
+---@param res table the results of the hungarianAlgorithm
+---@param a table the original table
 ---@section printHungarianResults
-function printHungarianResults(hungarianRes, referenceTable)
-    for key, _ in pairs(hungarianRes) do
-        key = key - 1
-        print("row: " .. key + 1 .. " col: " .. hungarianRes[key + 1] .. " val: " .. (referenceTable[key + 1][hungarianRes[key + 1]] == 9e2 and "H" or referenceTable[key + 1][hungarianRes[key + 1]]))
+function printHungarianResults(res, a)
+    for i = 1, #a do
+        str = ""
+        for l = 1, #a[i] do
+            --replace 9e2 with H for highlighting
+
+            if a[i][l] == 9e2 then
+                str = str .. "H, "
+            elseif res[l] == i then
+                str = str .. "\27[32m" .. a[i][l] .. "\27[0m, "
+            else
+                str = str .. a[i][l] .. ", "
+            end
+        end
+        print(str)
     end
 end
 ---@endsection
@@ -156,29 +178,21 @@ j = {
     {1, 0, 2}
 }
 
-printTable(h)
-print("------------")
 normalizeTable(h)
-printTable(h)
+--printTable(stripTable(h))
 print("------------")
-normalizeTable(g)
-printTable(g)
-print("------------")
-printTable(j)
-print("------------")
-normalizeTable(j)
-printTable(j)
-
 res = hungarianAlgorithm(h)
 printHungarianResults(res, h)
-
 print("------------")
-
+normalizeTable(g)
+--printTable(g)
+print("------------")
 res2 = hungarianAlgorithm(g)
 printHungarianResults(res2, g)
-
 print("------------")
-
+normalizeTable(j)
+--printTable(j)
+print("------------")
 res3 = hungarianAlgorithm(j)
 printHungarianResults(res3, j)
 ---@endsection
