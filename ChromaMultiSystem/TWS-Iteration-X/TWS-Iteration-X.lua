@@ -118,7 +118,7 @@ function onTick()
             end
         end
         --#endregion
-        
+
         --Ok, so what I have done now is remove the check for having reached the limit because it seems pointless in theory
         --The target tracking works the same way with and without it the difference being that it now updates instantly
         --This could have caused issues if I had single assignment as a relationship of 1:1 between contacts and tracks
