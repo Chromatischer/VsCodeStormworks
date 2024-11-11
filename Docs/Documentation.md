@@ -833,3 +833,292 @@ end
 I sadly don't know where I have this exact implementation from. Maybe I wrote it myself? IDK though...
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
+
+
+## Datalink
+
+This project is meant to do the following:
+ - Transmit data from one antenna
+ - Receive data from another antenna, whilst scanning channels
+ - Vessel one takes channel 1 to send
+ - Vessel two takes channel 2 to send
+ - Vessel three takes channel 3 to send
+ - Vessel one scans channel 2, 3 to receive information and display it on screen
+
+Data that should be transmitted:
+ - Vessel Position (X, Y, Altitude)
+ - Vessel Heading
+ - Vessel Speed
+ - Vessel ID
+ - Targeted Waypoint (X, Y, Z, ID)
+ - Current Selected Waypoint (X, Y, Z, ID)
+ - Status Overwiew: 
+    - Vessel status
+    - Mission status
+    - Crew status
+    - Communication status
+    - Resources aboard
+    - Environment conditions
+ - Radio Channel for Primary as well as Secondary communications
+ - Number of souls aboard (0 - 17)
+
+Using the composite channels, the maximum amount of digits that can safely be transfered are 15 before loosing any precision.
+
+Using my encoder / decoder I can for example encode 3 x 5 digits into one number and transfer it safely using a single composite channel!
+
+I expect the coordinates in game to go from -99.999 to 99.999 that means, I can encode three coordinates per channel, which is more than enough, because I only need two, the remaining one can be used for a three digit angle 0 - 360 and another two digits for the ID -99 to 99, which will be convertet to 0 - 198.
+
+```lua
+dataLink = DataLink({2, 2, 5})
+encoded, signs = encode(dataLink, {12, 34, 56789})
+decoded = decode(dataLink, encoded, signs)
+expect({12, 34, 56789}, decoded)
+print("Test passed")
+```
+
+Example code for the use of the DataLink
+
+The exact layout is as follows:
+ - Channel 1: X(5), Y(5), ANGLE(3), ID(2)
+ - Channel 2: ALT(3), SPEED(3), STATUS(6)
+ - Channel 3: P_RADIO(5), S_RADIO(5), SOULS(1)
+ - Channel 4: C_WPX(5), C_WPY(5), C_WPZ(3), WPID(2)
+ - Channel 5: T_WPX(5), T_WPY(5), T_WPZ(3), TPID(2)
+
+Status digits are split up into 6 categories where each digit has it's own meaning:
+ - 1: Vessel Status
+ - 2: Mission Status
+ - 3: Crew Status
+ - 4: Communication Status
+ - 5: Resource Status
+ - 6: Evironment Status
+
+As a table this looks as follows:
+<table>
+    <tr>
+        <th> Vessel Status </th>
+        <th> Mission Status </th>
+        <th> Crew Status </th>
+        <th> Communication Status </th>
+        <th> Resource Status </th>
+        <th> Evironment Status </th>
+    </tr>
+    <tr>
+        <td> Idle </td>
+        <td> Standby </td>
+        <td> Full Crew </td>
+        <td> Full Comms </td>
+        <td> Full Resources </td>
+        <td> Perfect Weather </td>
+    </tr>
+    <tr>
+        <td> En Route </td>
+        <td> Assigned </td>
+        <td> Reduced Crew </td>
+        <td> Reduced Comms </td>
+        <td> Fuel 75% </td>
+        <td> Good Weather </td>
+    </tr>
+    <tr>
+        <td> On Scene </td>
+        <td> Active Rescue </td>
+        <td> Crew Resting </td>
+        <td> Minimal Comms </td>
+        <td> Fuel 50% </td>
+        <td> Medium Waves </td>
+    </tr>
+    <tr>
+        <td> Returning </td>
+        <td> Patient Transfer </td>
+        <td> Crew Impared </td>
+        <td> Offline </td>
+        <td> Fuel 25% </td>
+        <td> Heavy Waves </td>
+    </tr>
+    <tr>
+        <td> Maintanance </td>
+        <td> Servicing </td>
+        <td> Crew Emergency </td>
+        <td> Emergency Comms </td>
+        <td> Fuel 10% </td>
+        <td> Medium Fog </td>
+    </tr>
+    <tr>
+        <td> Assistance Requested </td>
+        <td> Fire Services </td>
+        <td> No one Aboard </td>
+        <td> Radio Unmanned </td>
+        <td> Low Medical </td>
+        <td> Heavy Fog </td>
+    </tr>
+    <tr>
+        <td> Mayday </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> Critical Medical </td>
+        <td> Storm </td>
+    </tr>
+    <tr>
+        <td> Hull Damaged </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> Electrical Low </td>
+        <td> Heavy Rain </td>
+    </tr>
+    <tr>
+        <td> Anchored </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> -- </td>
+        <td> Electrical Critical </td>
+        <td> Do Not Follow </td>
+</table>
+
+All of these are encoded into a single digit, in total making a 6 digit number, that can be used to display the status of the vessel.
+
+That makes the code for the DataLink object look as follows:
+```lua
+d1 = DataLink({5, 5, 3, 2})
+d2 = DataLink({3, 3, 6})
+d3 = DataLink({5, 5, 1})
+d4 = DataLink({5, 5, 3, 2})
+d5 = DataLink({5, 5, 3, 2})
+```
+
+note, that for simplicity, the speed is in m/s and multiplied by 3, this allows for speeds of up to 333m/s to be transmitted but with a precision of 1/3 m/s and not 1 m/s.
+I think that this is a good compromise between max speed and precision.
+
+For the altitude, I am going to subtract 900 from it, this allows for maximum altitudes of 999 + 900 = 1899m to be transmitted with a precision of 1m. And a minimum altitude of -99m which is more than enough for most applications.
+
+The Vessels own selected ID is going to be 0 - 198 (two digits -99 to 99). The same goes for the waypoint ID.
+
+For the receiver, it has to scan the channels, from one of them, take the data and save it, then display it on screen. The general algorithm looks as follows:
+
+
+Transmitted over composite:
+<table>
+    <tr>
+        <th>Number</th>
+        <th>Use</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Number I</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Signs I</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Number II</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Signs II</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Number III</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Signs III</td>
+    </tr>
+    <tr>
+        <td>N</td>
+        <td>Number N</td>
+    </tr>
+    <tr>
+        <td>N + 1</td>
+        <td>Signs N</td>
+    </tr>
+</table>
+
+If one of the vessels disconnects and a channel gets freed in the middle, the other vessels should shift down to fill the gap, to prevent double assignment, vessels can only shift by one channel, this makes them propagate down the line.
+
+<table>
+    <tr>
+        <th>Channel</th>
+        <th>Iteration -></th>
+        <th>Iteration -></th>
+        <th>Iteration <></th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>Vessel 1</td>
+        <td>Vessel 1</td>
+        <td>Vessel 1</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>--------</td>
+        <td>Vessel 3</td>
+        <td>Vessel 3</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Vessel 3↑</td>
+        <td>--------</td>
+        <td>Vessel 4</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Vessel 4</td>
+        <td>Vessel 4↑</td>
+        <td>--------</td>
+    </tr>
+</table>
+
+In code, this looks as follows:
+```lua
+if isVesselTransmit then
+        if not scanAt == transmitOn then --dont scan the channel you are transmitting on
+            --Read the data from the vessel transmitting on the channel
+            currentScan = currentScan + 1
+        end
+    else --no vessel on currentScan Channel
+        if currentScan + 1 == transmitOn - 1 then
+            transmitOn = currentScan --shift the transmit channel down one
+            --meaning, that there will never be two vessels transmitting on the same channel
+        end
+        numberOfVessels = currentScan
+        currentScan = 0
+    end
+end
+```
+
+So the `currentScan` would look like this:
+
+<table>
+    <tr>
+        <th>Channel</th>
+        <th>IsVesselTransmit</th>
+        <th>currentScan</th>
+        <th>transmitOn</th>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>True</td>
+        <td>1</td>
+        <td>3↓</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>False</td>
+        <td>1 → 0</td>
+        <td>2</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Self↑</td>
+        <td>---</td>
+        <td>(2)</td>
+    </tr>
+</table>
+
+
+
+[[return to Top]](#documentation-chroma-systems-lua-projects)
