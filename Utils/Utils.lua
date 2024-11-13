@@ -158,3 +158,21 @@ function translatePoint(angle, radius, point)
     return {x = point.x + radius * math.sin(angle), y = point.y + radius * math.cos(angle)}
 end
 ---@endsection
+
+---Returns a char from a number in pure uppercase
+---@param num number the number to convert to a char (1-25)
+---@return string char the char from the number
+---@section toChar
+function toChar(num)
+    return string.upper(string.char(num + 97))
+end
+---@endsection
+
+---Returns a number from a char in pure lowercase
+---@param char string the char to convert to a number (A-Z)
+---@return number num the number from the char
+---@section fromChar
+function fromChar(char)
+    return string.byte(string.lower(char)) - 97
+end
+---@endsection

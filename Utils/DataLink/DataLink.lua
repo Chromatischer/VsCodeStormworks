@@ -286,3 +286,31 @@ function outputEncodedAt(encoded, startChannel)
     output.setNumber(startChannel + 1, encoded.signs)
 end
 ---@endsection
+
+---Creates a string from the givven vesselID (1-198) and returns it
+---@param id number the id to convert
+---@return string string two characters that represent the id as a string. No duplicates across all 198 IDs
+---@section stringID
+function IDToString(id)
+    l = id / 198 * 25
+    j = math.floor(l)
+    k = math.floor((l - j) * 25)
+    k = k == j and k + 1 or k
+
+    return toChar(j) .. toChar(k)
+end
+---@endsection
+
+---Creates a number from the given string (two characters) and returns it
+---@param str string the string to convert
+---@return number ID, boolean isComputable the id that was converted from the string
+---@section IDFromString
+function IDFromString(str)
+    j = fromChar(string.sub(str, 1, 1))
+    k = fromChar(string.sub(str, 2, 2))
+    l = j + k / 25
+    id = (l / 25) * 198
+
+    return math.ceil(id), str == IDToString(math.ceil(id))
+end
+---@endsection

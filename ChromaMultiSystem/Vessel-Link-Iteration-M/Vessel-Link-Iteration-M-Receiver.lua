@@ -31,19 +31,20 @@ require("Utils.DrawAddons")
 require("Utils.DataLink.DataLink")
 
 
-vessels = {}
+vessels = {} ---@type table<Vessel>
 startScanningAt = 0
 lastCompleted = 0
 numberOfVessels = 0
 transmitOn = 0
 currentScan = 0
 channelOffset = 0
+MAX_VESSEL_DETECT_TIME = 500
 MAX_VESSELS = 32
 
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    startScanningAt = property.getNumber("ScanAt:")
+    startScanningAt = property.getNumber("ScanAbove:")
     transmitOn = transmitOn == 0 and startScanningAt + MAX_VESSELS or transmitOn --if transmitOn is 0, set it to the biggest possible, then do the step downward
     --start scanning for vessels transmitting their data at the specified channel
     if isVesselTransmit then
@@ -53,9 +54,9 @@ function onTick()
             signs = {input.getBool(channelOffset + 2), input.getBool(channelOffset + 4), input.getBool(channelOffset + 6), input.getBool(channelOffset + 8), input.getBool(channelOffset + 10)}
 
             --Create a vessel object with the data
-            vessel = decodeVessel(numbers, signs, scanAt - 1)
-            vessels[scanAt] = vessel
-            vessel[scanAt].detected = ticks
+            vessel = decodeVessel(numbers, signs, scanAt - 1) ---@type Vessel
+            vessels[currentScan] = vessel
+            vessels[currentScan].detected = ticks
             currentScan = currentScan + 1
         end
     else --no vessel on currentScan Channel
@@ -67,11 +68,17 @@ function onTick()
         currentScan = 0
     end
 
+    --Delete vessels that have not been detected for a while, due to receiver range or disconnecting
+    for _, vessel in ipairs(vessels) do
+        if ticks - vessel.detected > MAX_VESSEL_DETECT_TIME then
+            table.remove(vessels, _)
+        end
+    end
+
     scanAt = startScanningAt + currentScan
     output.setNumber(1, transmitOn)
     output.setNumber(2, scanAt)
 end
 
 function onDraw()
-    screen.drawCircle(16,16,5)
 end

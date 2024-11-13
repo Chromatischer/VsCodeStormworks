@@ -90,3 +90,28 @@ function setMapColors(isDarkMode)
     end
 end
 ---@endsection
+
+---Draws a target indicator on the screen at the given position with the option to have letters in between the brackets
+---@param style number the style of the target indicator (0: "[]", 1: "<>", 2: "{}", 3: "()", 4: "||")
+---@param filler string the string to put in between the brackets (max 2 characters)
+---@param pos Vec2 the position of the target indicator (screenspace)
+---@param angle number the angle of the target in radians
+---@param speed number the speed of the target in m/s
+---@param color Color the color of the target indicator (default is signalColor)
+---@param radius number the radius of the target indicator (default is 3)
+---@section drawTargetIndicator
+function drawTargetIndicator(style, filler, pos, angle, speed, color, radius)
+    style = style or 0
+    brackets = {"[]", "<>", "{}", "()", "||"}
+    lbracket = string.sub(brackets[style + 1], 1, 1)
+    rbracket = string.sub(brackets[style + 1], 2, 2)
+    filler = filler or ""
+    color = color or SIGNAL_LIGHT
+    radius = radius or 3
+    setAsScreenColor(color)
+    screen.drawText(pos.x - 3, pos.y - 2, lbracket .. filler .. rbracket)
+    startPoint = transformScalar(pos, angle, radius)
+    toPoint = transformScalar(pos, angle, radius + speed * 30)
+    screen.drawLine(startPoint.x, startPoint.y, toPoint.x, toPoint.y)
+end
+---@endsection

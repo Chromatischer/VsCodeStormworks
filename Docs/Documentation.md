@@ -1119,6 +1119,23 @@ So the `currentScan` would look like this:
     </tr>
 </table>
 
+using the following functions, you could transmit and receive letters to make for a better ID System:
+```lua
+function letterToNumber(letter)
+    return string.byte(letter) - 65 --converts the letter to a number from 0 to 25
+end
 
+function numberToLetter(number)
+    return string.char(number + 65) --converts the number to a letter from A to Z
+end
+```
+
+Meaning, that for a two letter code you need 4 digits.
+
+These two letter codes will be procedually generated from the vessel ID. All 198 possible IDs have a specific two letter code assigned to them. This code is then transmitted over the data link and can be used to identify the vessel.
+
+It is supposed to be selected by selection of the ID shortly after the boot sequence of the vessel using three "rocker switches" for selection.
+
+Display of the Vessels should be as follows: [ID] with the speed and direction indicator stolen from the TWS project. Then, if clicked an info box should pop up with all the information about the vessel, like status. Their target and current waypoint should be displayed in their color respectively and as a line to the waypoint.
 
 [[return to Top]](#documentation-chroma-systems-lua-projects)
