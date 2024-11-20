@@ -201,6 +201,7 @@ end
 ---@section modifyValue
 function modifyValue(self, offset)
     self.v = self.v + offset
+    return self
 end
 ---@endsection
 

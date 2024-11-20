@@ -22,6 +22,11 @@ do
 end
 ---@endsection
 
+require("Utils.Vectors.vec3")
+require("Utils.Vectors.vec2")
+require("Utils.Utils")
+require("Utils.DataLink.DataLink")
+
 ticks = 0
 function onTick()
     ticks = ticks + 1
@@ -115,9 +120,11 @@ function onTick()
     outputStatus = encodeStatus(vesselStatus, missionStatus, crewStatus, commStatus, resourceStatus, environmentStatus)
 
     obj1, obj2, obj3, obj4, obj5 = encodeVesselData(Vec3(gpsX, gpsY, gpsZ), vesselAngle, ownID, speed, vesselStatus, missionStatus, crewStatus, commStatus, resourceStatus, environmentStatus, primaryRadioChannel, secondaryRadioChannel, soulsAboard, Vec3(currentWaypointX, currentWaypointY, currentWaypointZ), currentWaypointID, Vec3(targetWaypointX, targetWaypointY, targetWaypointZ), targetWaypointID)
-    outputEncodedAt(obj1, 1)
-    outputEncodedAt(obj2, 3)
-    outputEncodedAt(obj3, 5)
-    outputEncodedAt(obj4, 7)
-    outputEncodedAt(obj5, 9)
+    if ownID > 0 and ownID < 199 then --check that neither 0 nor -1 are used as IDs
+        outputEncodedAt(obj1, 1)
+        outputEncodedAt(obj2, 3)
+        outputEncodedAt(obj3, 5)
+        outputEncodedAt(obj4, 7)
+        outputEncodedAt(obj5, 9)
+    end
 end
