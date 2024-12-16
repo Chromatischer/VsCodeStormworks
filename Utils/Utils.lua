@@ -176,3 +176,15 @@ function fromChar(char)
     return string.byte(string.lower(char)) - 97
 end
 ---@endsection
+
+---Adds a field to a table / object and returns the table / object
+---@param self table the table to add the field to
+---@param field any
+---@param value any
+---@return table self the table with the added field
+---@section addField
+function addField(self, field, value)
+    self[field] = value
+    return self
+end
+---@endsection

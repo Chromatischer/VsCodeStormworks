@@ -434,3 +434,200 @@ function toString(self)
     return str
 end
 ---@endsection
+
+---@class Matrix
+---@field copy function copy the matrix
+---@param self Matrix the matrix object
+---@return Matrix Matrix the copied matrix
+---@section copy
+function copy(self)
+    newMatrix = flood(RectMatrix(self.width, self.height), 0)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            newMatrix.data[i][j] = self.data[i][j]
+        end
+    end
+    return newMatrix
+end
+---@endsection
+
+---@class Matrix
+---@field isSquare function check if the matrix is square
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is square
+---@section isSquare
+function isSquare(self)
+    return self.width == self.height
+end
+---@endsection
+
+---@class Matrix
+---@field isSymmetric function check if the matrix is symmetric
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is symmetric
+---@section isSymmetric
+function isSymmetric(self)
+    return isSquare(self) and self == transpose(self)
+end
+---@endsection
+
+---@class Matrix
+---@field isDiagonal function check if the matrix is diagonal
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is diagonal
+---@section isDiagonal
+function isDiagonal(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if i ~= j and self.data[i][j] ~= 0 then
+                return false
+            end
+        end
+    end
+    return true
+end
+---@endsection
+
+---@class Matrix
+---@field isIdentity function check if the matrix is an identity matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is an identity matrix
+---@section isIdentity
+function isIdentity(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if i == j and self.data[i][j] ~= 1 then
+                return false
+            elseif i ~= j and self.data[i][j] ~= 0 then
+                return false
+            end
+        end
+    end
+    return true
+end
+---@endsection
+
+---@class Matrix
+---@field isUpperTriangular function check if the matrix is an upper triangular matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is an upper triangular matrix
+---@section isUpperTriangular
+function isUpperTriangular(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if i > j and self.data[i][j] ~= 0 then
+                return false
+            end
+        end
+    end
+    return true
+end
+---@endsection
+
+---@class Matrix
+---@field isLowerTriangular function check if the matrix is a lower triangular matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is a lower triangular matrix
+---@section isLowerTriangular
+function isLowerTriangular(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if i < j and self.data[i][j] ~= 0 then
+                return false
+            end
+        end
+    end
+    return true
+end
+---@endsection
+
+---@class Matrix
+---@field isOrthogonal function check if the matrix is an orthogonal matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is an orthogonal matrix
+---@section isOrthogonal
+function isOrthogonal(self)
+    return isSquare(self) and self * transpose(self) == RectMatrix(self.width, self.height)
+end
+---@endsection
+
+---@class Matrix
+---@field isNilpotent function check if the matrix is a nilpotent matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is a nilpotent matrix
+---@section isNilpotent
+function isNilpotent(self)
+    return self ^ self.width == RectMatrix(self.width, self.height)
+end
+---@endsection
+
+---@class Matrix
+---@field isSingular function check if the matrix is a singular matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is a singular matrix
+---@section isSingular
+function isSingular(self)
+    return determinant(self) == 0
+end
+---@endsection
+
+---@class Matrix
+---@field isSkewSymmetric function check if the matrix is a skew symmetric matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is a skew symmetric matrix
+---@section isSkewSymmetric
+function isSkewSymmetric(self)
+    return isSquare(self) and self == negate(transpose(self))
+end
+---@endsection
+
+---@class Matrix
+---@field containsNil function check if the matrix contains a nil value
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix contains a nil value
+---@section containsNil
+function containsNil(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if self.data[i][j] == nil then
+                return true
+            end
+        end
+    end
+    return false
+end
+---@endsection
+
+---@class Matrix
+---@field purgeNils function remove nil values from the matrix
+---@param self Matrix the matrix object
+---@return Matrix Matrix the modified matrix
+---@section purgeNils
+function purgeNils(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if self.data[i][j] == nil then
+                self.data[i][j] = 0
+            end
+        end
+    end
+    return self
+end
+---@endsection
+
+---@class Matrix
+---@field isZero function check if the matrix is a zero matrix
+---@param self Matrix the matrix object
+---@return boolean boolean True if the matrix is a zero matrix
+---@section isZero
+function isZero(self)
+    for i = 1, self.width do
+        for j = 1, self.height do
+            if self.data[i][j] ~= 0 then
+                return false
+            end
+        end
+    end
+    return true
+end
+---@endsection
