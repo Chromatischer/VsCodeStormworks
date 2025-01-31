@@ -80,7 +80,7 @@ isDepressed = false
 SelfIsSelected = false
 selfID = 0
 lastGlobalScale = 1
-
+touchX, touchY = 0, 0
 
 ticks = 0
 function onTick()
@@ -138,7 +138,7 @@ function onTick()
 
     if isDepressed and ticks - lastPressed > 10 then
         for _, button in ipairs(buttons) do
-            if isPointInRectangle(button.x, button.y, button.w and button.w or 8, 8, touchX, touchY) then
+            if isPointInRectangle(button.x, button.y, button.w or 8, 8, touchX, touchY) then
                 if button.f then
                     button.f()
                 end
@@ -162,7 +162,7 @@ function onDraw()
     drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
     --#region Radar range as well as radar look direction indicator
-    rangeRing = maxRadarRange / (zooms[zoom] * 1000) * math.min(Swidth, Sheight)
+    rangeRing = maxRadarRange / (zooms[zoom] * 1000) * Swidth
 
     setColorGrey(0.3, CHDarkmode)
     screen.drawCircle(mapGPSX, mapGPSY, rangeRing)

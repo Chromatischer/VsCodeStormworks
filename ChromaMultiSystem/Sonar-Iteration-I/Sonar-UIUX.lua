@@ -54,16 +54,20 @@ end
 -- CHB3: Touch II
 --#endregion
 
+require("Utils.Color")
+require("Utils.DrawAddons")
+require("Utils.Utils")
+
 zoom = 5
 zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
 
 buttons = {{x = 0, y = 0, t = "+",    f = function () isUsingCHZoom = false zoom = zoom + 1 < #zooms and zoom + 1 or zoom end},
-{x = 0, y = 8, t = "-",               f = function () isUsingCHZoom = false zoom = zoom - 1 > 1 and zoom - 1 or zoom end},
-{x = -8, t = "V",                     f = function () screenCenterY = screenCenterY - MapPanSpeed centerOnGPS = false end},
-{t = ">",                             f = function () screenCenterX = screenCenterX + MapPanSpeed centerOnGPS = false end},
-{x = -16, t = "<",                    f = function () screenCenterX = screenCenterX - MapPanSpeed centerOnGPS = false end},
-{x = -8, y = -8, t = "^",             f = function () screenCenterY = screenCenterY + MapPanSpeed centerOnGPS = false end},
-{y = -8, t = "C",                     f = function () centerOnGPS = true end},
+{x = 0, y = 8,            t = "-",    f = function () isUsingCHZoom = false zoom = zoom - 1 > 1 and zoom - 1 or zoom end},
+{x = -8,                  t = "V",    f = function () screenCenterY = screenCenterY - MapPanSpeed centerOnGPS = false end},
+{                         t = ">",    f = function () screenCenterX = screenCenterX + MapPanSpeed centerOnGPS = false end},
+{x = -16,                 t = "<",    f = function () screenCenterX = screenCenterX - MapPanSpeed centerOnGPS = false end},
+{x = -8, y = -8,          t = "^",    f = function () screenCenterY = screenCenterY + MapPanSpeed centerOnGPS = false end},
+{y = -8,                  t = "C",    f = function () centerOnGPS = true end},
 }
 
 isUsingCHZoom = true
@@ -83,6 +87,7 @@ isDepressed = false
 SelfIsSelected = false
 selfID = 0
 lastGlobalScale = 1
+maxSonarRange = 1000
 
 
 ticks = 0
@@ -103,7 +108,6 @@ function onTick()
     isDepressed = CHSel1 == selfID and input.getBool(2) or input.getBool(3)
     SelfIsSelected = CHSel1 == selfID or CHSel2 == selfID
     selfID = property.getNumber("SelfID")
-    maxRadarRange = property.getNumber("MaxRadarRange")
 
     output.setNumber(1, gpsX)
     output.setNumber(2, gpsY)
@@ -114,6 +118,7 @@ function onTick()
     output.setNumber(7, screenCenterY)
     output.setNumber(8, touchX)
     output.setNumber(9, touchY)
+    output.setNumber(10, maxSonarRange)
     output.setBool(1, isDepressed)
     output.setBool(2, CHDarkmode)
     output.setBool(3, SelfIsSelected)
@@ -163,7 +168,7 @@ function onDraw()
     drawDirectionIndicator(mapGPSX, mapGPSY, CHDarkmode, vesselAngle)
 
     --#region Radar range as well as radar look direction indicator
-    rangeRing = maxRadarRange / (zooms[zoom] * 1000) * math.min(Swidth, Sheight)
+    rangeRing = maxSonarRange / (zooms[zoom] * 1000) * math.min(Swidth, Sheight)
 
     setColorGrey(0.3, CHDarkmode)
     screen.drawCircle(mapGPSX, mapGPSY, rangeRing)

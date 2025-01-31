@@ -137,6 +137,7 @@ function onTick()
     output.setBool(1, CHDarkmode)
     output.setBool(2, SelfIsSelected)
     output.setBool(3, isDepressed)
+    output.setBool(4, input.getBool(4))
 
 end
 
