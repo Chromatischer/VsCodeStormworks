@@ -50,7 +50,7 @@ end
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-require("Utils.Utils")
+require("Utils")
 --#region setup
 zooms = {0.1,0.2,0.5,1,2,5,10,15,20,25,30,40,50}
 zoom = 4

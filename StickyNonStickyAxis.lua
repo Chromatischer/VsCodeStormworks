@@ -35,8 +35,8 @@ end
 ---@endsection
 
 
-require("Utils.Utils")
-require("Utils.Color_Lerp")
+require("Utils")
+require("Color_Lerp")
 
 sticky_axis = 0
 inc = 0.01

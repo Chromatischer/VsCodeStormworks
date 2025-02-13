@@ -1,5 +1,5 @@
-require("Utils.DataLink.DataLink")
-require("Utils.Utils")
+require("DataLink.DataLink")
+require("Utils")
 tbl = {}
 for i = 1, 198 do
     --do transformation to transform 1 - 31 to a two letter String that is unique

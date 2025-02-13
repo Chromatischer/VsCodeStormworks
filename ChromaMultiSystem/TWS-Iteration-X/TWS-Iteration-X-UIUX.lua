@@ -47,9 +47,9 @@ end
 
 --The Idea of this project is to seperate the UI / UX layer from the main logic in the other script. The CH multi has to be wired through to the main. All the other data has to be too!
 
-require("Utils.Utils")
-require("Utils.Color")
-require("Utils.DrawAddons")
+require("Utils")
+require("Color")
+require("DrawAddons")
 
 zoom = 5
 zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}

@@ -50,14 +50,14 @@ end
 --CHB5: Fish Detected
 --#endregion
 
-require("Utils.Fish")
-require("Utils.VirtualMapUtils")
-require("Utils.Color")
-require("Utils.DrawAddons")
-require("Utils.StringFormatUtils")
-require("Utils.Utils")
-require("Utils.Vectors.vec3")
-require("Utils.Vectors.vec2")
+require("Fish")
+require("VirtualMapUtils")
+require("Color")
+require("DrawAddons")
+require("StringFormatUtils")
+require("Utils")
+require("Vectors.vec3")
+require("Vectors.vec2")
 
 allFish = {} ---@type table<Fish>
 schools = {} ---@type table<table<Vec2, number, Color, number>>

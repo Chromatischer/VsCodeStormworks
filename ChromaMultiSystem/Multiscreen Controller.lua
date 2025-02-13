@@ -29,7 +29,7 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
+require("Utils")
 
 CHDarkmode = false
 CHSel1 = 1

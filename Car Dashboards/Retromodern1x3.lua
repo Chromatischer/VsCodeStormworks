@@ -53,11 +53,11 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.draw_additions")
-require("Utils.MatrixDrawer")
-require("Utils.Color_Lerp")
-require("Utils.Time.timeUtils")
+require("Utils")
+require("draw_additions")
+require("MatrixDrawer")
+require("Color_Lerp")
+require("Time.timeUtils")
 
 gModestr = {"P", "R", "D", "M", "N"}
 selScreen, lastX, lastY, lastZ, ticks, displayFuel, displayBattery, displayEndurance, displayRange, displayTSpeed, trackMeters = 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

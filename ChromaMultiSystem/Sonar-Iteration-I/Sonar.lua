@@ -36,12 +36,12 @@ do
 end
 ---@endsection
 
-require("Utils.Color")
-require("Utils.DrawAddons")
-require("Utils.Utils")
-require("Utils.Sonar.SonarHelper")
-require("Utils.Vectors.vec2")
-require("Utils.Vectors.vec3")
+require("Color")
+require("DrawAddons")
+require("Utils")
+require("Sonar.SonarHelper")
+require("Vectors.vec2")
+require("Vectors.vec3")
 
 screenCenterX, screenCenterY = 0, 0
 maxSonarRange = 0

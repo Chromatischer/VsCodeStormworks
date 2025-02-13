@@ -52,7 +52,7 @@ end
 ---      [X] Test everything
 ---      [] Do the averaged part
 
-require("Utils.Utils")
+require("Utils")
 zooms = {0.1,0.2,0.5,1,2,5,10,15,20,25,30,40,50}
 zoom = 4
 pause_ticks_button = 0

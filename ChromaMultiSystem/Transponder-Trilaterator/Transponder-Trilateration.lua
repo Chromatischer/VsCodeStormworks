@@ -29,10 +29,10 @@ do
 end
 ---@endsection
 
-require("Utils.Color")
-require("Utils.Utils")
-require("Utils.TrilaterationUtils")
-require("Utils.DrawAddons")
+require("Color")
+require("Utils")
+require("TrilaterationUtils")
+require("DrawAddons")
 
 --#region Input Layout
 -- Number Inputs:

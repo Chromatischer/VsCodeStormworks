@@ -27,11 +27,11 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.Color")
-require("Utils.DrawAddons")
-require("Utils.Vectors.vec2")
-require("Utils.MatrixDrawer")
+require("Utils")
+require("Color")
+require("DrawAddons")
+require("Vectors.vec2")
+require("MatrixDrawer")
 
 ticks = 0
 function onTick()

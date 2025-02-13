@@ -72,8 +72,6 @@ function onTick()
     contactTSD = input.getNumber(10)
     targetDetected = input.getBool(1)
 
-    screen.drawTextBox
-
     relPos = radarToRelativeVec3(contactDistance, contactAzimuth, contactElevation, selfAngle, selfPitch)
     if contactTSD ~= 0 then
         rawRadarData = scalarDivideVec3(addVec3(relPos, scaleVec3(rawRadarData, contactTSD - 1)), contactTSD) ---@type Vec3

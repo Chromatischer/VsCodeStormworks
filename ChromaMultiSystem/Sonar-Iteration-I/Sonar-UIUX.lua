@@ -54,9 +54,9 @@ end
 -- CHB3: Touch II
 --#endregion
 
-require("Utils.Color")
-require("Utils.DrawAddons")
-require("Utils.Utils")
+require("Color")
+require("DrawAddons")
+require("Utils")
 
 zoom = 5
 zooms = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50}
