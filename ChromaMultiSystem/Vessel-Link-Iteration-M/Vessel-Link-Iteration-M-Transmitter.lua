@@ -22,10 +22,10 @@ do
 end
 ---@endsection
 
-require("Utils.Vectors.vec3")
-require("Utils.Vectors.vec2")
-require("Utils.Utils")
-require("Utils.DataLink.DataLink")
+require("Vectors.vec3")
+require("Vectors.vec2")
+require("Utils")
+require("DataLink.DataLink")
 
 ticks = 0
 function onTick()

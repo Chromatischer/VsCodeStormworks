@@ -27,9 +27,9 @@ do
 end
 ---@endsection
 
-require("Utils.RockerNumber")
-require("Utils.Color")
-require("Utils.DrawAddons")
+require("RockerNumber")
+require("Color")
+require("DrawAddons")
 
 selCode = 0
 MAX_CODE = 198

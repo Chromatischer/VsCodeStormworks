@@ -35,8 +35,8 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.draw_additions")
+require("Utils")
+require("draw_additions")
 
 ticks = 0
 function onTick()

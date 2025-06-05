@@ -24,11 +24,11 @@ do
 end
 ---@endsection
 
-require("Utils.Vectors.vec3")
-require("Utils.Vectors.vec2")
-require("Utils.Utils")
-require("Utils.DrawAddons")
-require("Utils.DataLink.DataLink")
+require("Vectors.vec3")
+require("Vectors.vec2")
+require("Utils")
+require("DrawAddons")
+require("DataLink.DataLink")
 
 
 vessels = {} ---@type table<Vessel>

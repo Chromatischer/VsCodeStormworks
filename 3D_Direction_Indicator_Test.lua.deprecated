@@ -35,7 +35,7 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
+require("Utils")
 
 ticks = 0
 function onTick()

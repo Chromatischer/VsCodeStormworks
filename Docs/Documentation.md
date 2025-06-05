@@ -21,7 +21,7 @@ Table of contents:
 ## Interactive Map 5x3
 
 
-This is map made specifically for 5x3 monitors. With the current ``Utils.Utils`` it is too large to be able to be pasted into sw directly so you have to strip it down to the necessary functions. It has support for dragging the map. Setting and outputting coordinates. And a radar that also displays target elevation.
+This is map made specifically for 5x3 monitors. With the current ``Utils`` it is too large to be able to be pasted into sw directly so you have to strip it down to the necessary functions. It has support for dragging the map. Setting and outputting coordinates. And a radar that also displays target elevation.
 
 For the radar I am using this code:
 ```lua
@@ -611,7 +611,7 @@ But what is the real solution here? As it turns out, it is Trilateration, as it 
 
 The article comes to the conclusion, that this is not a math problem, but more an optimization problem. The minimization of the distance between the point and the circumference of an arbitrary amount of circles. In the example, I have used three, but theoretically any number would be possible.
 
-To do this, the article suggest the use of the mean squared error and a gradient descend loop to approximate the origin as closely as necessary. I have implemented this in code as my [Trilateration Utils](/Utils/TrilaterationUtils.lua).
+To do this, the article suggest the use of the mean squared error and a gradient descend loop to approximate the origin as closely as necessary. I have implemented this in code as my [Trilateration Utils](/Utils/Trilaterationlua).
 
 The execution is pretty simple, I will go over it step by step:
  - Take an educated guess, to where the center could be. This is done, by taking the average X and Y coordinate of all the beacons

@@ -23,13 +23,13 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.Radar.BestTrackAlgorithm")
-require("Utils.Radar.radarToGlobalCoordinates")
-require("Utils.Color")
-require("Utils.DrawAddons")
-require("Utils.Vectors.vec2")
-require("Utils.Vectors.vec3")
+require("Utils")
+require("Radar.BestTrackAlgorithm")
+require("Radar.radarToGlobalCoordinates")
+require("Color")
+require("DrawAddons")
+require("Vectors.vec2")
+require("Vectors.vec3")
 
 --Will use 3 simultaneous contacts for now... so that means: 3 azimuths, 3 elevations, 3 distances, 3 contact statuses
 

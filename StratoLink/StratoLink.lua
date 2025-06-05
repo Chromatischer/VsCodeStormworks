@@ -1,8 +1,7 @@
 -- Author: Chromatischer
--- GitHub: https://github.com/Chromatischer
--- Workshop: https://shorturl.at/acefr
-
---Discord: @chromatischer--
+-- GitHub: github.com/Chromatischer
+-- Workshop: steamcommunity.com/profiles/76561199061545480/
+--
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
@@ -28,33 +27,34 @@ do
 
         -- touchscreen defaults
         local screenConnection = simulator:getTouchScreen(1)
-        simulator:setInputBool(1, screenConnection.isTouched)
-        simulator:setInputNumber(1, screenConnection.width)
-        simulator:setInputNumber(2, screenConnection.height)
-        simulator:setInputNumber(3, screenConnection.touchX)
-        simulator:setInputNumber(4, screenConnection.touchY)
-
-        -- NEW! button/slider options from the UI
-        simulator:setInputBool(31, simulator:getIsClicked(1))       -- if button 1 is clicked, provide an ON pulse for input.getBool(31)
-        simulator:setInputNumber(31, simulator:getSlider(1))        -- set input 31 to the value of slider 1
-
-        simulator:setInputBool(32, simulator:getIsToggled(2))       -- make button 2 a toggle, for input.getBool(32)
-        simulator:setInputNumber(32, simulator:getSlider(2) * 50)   -- set input 32 to the value from slider 2 * 50
     end;
 end
 ---@endsection
-require("Coordinate.Coordinate")
-require("Coordinate.Coordinate_Utils")
-require("Radar.radarToGlobalCoordinates")
-require("Radar.TrackWhileScanUtils")
-require("LifeBoatAPI")
 
-tempRadarContacts = {}
+-- Project for a futuristic looking HUD for the new HUD-System for Helmet Mounted Displays!
+
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    
+    pitch = input.getNumber(1)
+    roll = input.getNumber(2)
+    compas = input.getNumber(3) * 360 + 180 -- -0.5 to 0.5 to 0 to 360 Degrees
+
+    altitude = input.getNumber(4)
+    speed = input.getNumber(5)
+    heading = input.getNumber(6)
+
+    gpsX = input.getNumber(7)
+    gpsY = input.getNumber(8)
+    gpsZ = input.getNumber(9)
+
+    lookX = input.getNumber(10)
+    lookY = input.getNumber(11)
+
 end
 
 function onDraw()
+    Swidth, Sheight = screen.getWidth(), screen.getHeight()
+    screen.drawText(1, 1, "StratoLink HUD")
+    screen.drawText(1, 7, "D: " .. Swidth .. "x" .. Sheight)
 end

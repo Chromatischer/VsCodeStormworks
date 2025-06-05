@@ -62,7 +62,7 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
+require("Utils")
 
 errors = {}
 maxLines = 0

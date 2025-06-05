@@ -39,10 +39,10 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.StringFormatUtils")
-require("Utils.RoundToDecimalUtil")
-require("Utils.Color_Lerp")
+require("Utils")
+require("StringFormatUtils")
+require("RoundToDecimalUtil")
+require("Color_Lerp")
 debug = false
 
 ticks = 0

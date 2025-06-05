@@ -36,9 +36,9 @@ do
 end
 ---@endsection
 
-require("Utils.Utils")
-require("Utils.Color")
-require("Utils.DrawAddons")
+require("Utils")
+require("Color")
+require("DrawAddons")
 
 screenCenterX = 0
 screenCenterY = 0

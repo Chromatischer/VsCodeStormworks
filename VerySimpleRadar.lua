@@ -1,8 +1,7 @@
 -- Author: Chromatischer
--- GitHub: https://github.com/Chromatischer
--- Workshop: https://shorturl.at/acefr
-
---Discord: @chromatischer--
+-- GitHub: github.com/Chromatischer
+-- Workshop: steamcommunity.com/profiles/76561199061545480/
+--
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
@@ -50,21 +49,62 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-require("Utils")
+rawRadarData = Vec3(0, 0, 0)
+contacts = {}
+zoom = 1
+contactSymbol = "||"
+
 ticks = 0
 function onTick()
     ticks = ticks + 1
-    x1 = 0
-    y1 = 0
-    r1 = 5
-    x2 = 3
-    y2 = 0
-    r2 = 5
-    intersections = circleIntersection(x1,y1,r1,x2,y2,r2)
-    print(intersections.x1 .. " " .. intersections.y1)
-    print(intersections.x2 .. " " .. intersections.y2)
+    --inputs: 1-3: Self GPS, 4: Self Angle, 6: Radar Rotation, 7: Distance, 8: Azimuth, 9: Elevation, 10: Time since detected
+    --inputs: 1: target Detected
+
+    gpsX = input.getNumber(1)
+    gpsY = input.getNumber(2)
+    gpsZ = input.getNumber(3)
+    selfAngle = input.getNumber(4) * 360 + 180 --convert to degrees (-0.5 to 0.5 to 0 to 360)
+    selfPitch = input.getNumber(5)
+    radarRotation = input.getNumber(6) * 360 + 180
+    contactDistance = input.getNumber(7)
+    contactAzimuth = input.getNumber(8)
+    contactElevation = input.getNumber(9)
+    contactTSD = input.getNumber(10)
+    targetDetected = input.getBool(1)
+
+    relPos = radarToRelativeVec3(contactDistance, contactAzimuth, contactElevation, selfAngle, selfPitch)
+    if contactTSD ~= 0 then
+        rawRadarData = scalarDivideVec3(addVec3(relPos, scaleVec3(rawRadarData, contactTSD - 1)), contactTSD) ---@type Vec3
+    else
+        if vec3length(rawRadarData) > 50 then
+            table.insert(contacts, addField(addVec3(rawRadarData, Vec3(gpsX, gpsY, gpsZ)), "t", ticks))
+            rawRadarData = Vec3(0, 0, 0)
+        end
+    end
+
+    for i, contact in ipairs(contacts) do
+        if ticks - contact.t > 3000 then --3000 ticks = 50 seconds at 60 ticks per second or almost a minute
+            table.remove(contacts, i)
+        end
+    end
 end
 
 function onDraw()
-    screen.drawCircle(16,16,5)
+    Swidth, Sheight = screen.getWidth(), screen.getHeight()
+    setMapColors(false)
+    screen.drawMap(gpsX, gpsY, zoom)
+
+    for _, contact in ipairs(contacts) do
+        x, y = map.mapToScreen(gpsX, gpsY, zoom, Swidth, Sheight, contact.x, contact.y)
+        alpha = math.clamp(1 - percent(ticks - contact.t, 0, 3000), 0, 1)
+        screen.setColor(255, 255, 255, 255 * alpha)
+        screen.drawText(x, y, contactSymbol)
+    end
+
+    screen.setColor(255, 255, 255)
+    screen.drawText(5, 5, "C:" .. #contacts)
+
+    --draw a radar rotation line
+    screen.setColor(255, 255, 255)
+    screen.drawLine(Swidth / 2, Sheight / 2, Swidth / 2 + 50 * math.cos(math.rad(radarRotation)), Sheight / 2 + 50 * math.sin(math.rad(radarRotation)))
 end

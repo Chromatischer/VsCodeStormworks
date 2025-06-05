@@ -70,7 +70,7 @@ pulseY = 0
 -- Idea3: Use all pulsePoints and calculate the intersection of all circles every tick
 --Pro: Uses all data with the highest accuracy, Con: Most resource intensive
 
-require("Utils.CircleIntersectionUtils")
+require("CircleIntersectionUtils")
 
 ticks = 0
 function onTick()
