@@ -38,10 +38,12 @@
     ],
     "Lua.runtime.pathStrict": true,
     "Lua.workspace.library": [
-        "c:/Users/chrom/Documents/VsCodeStormworks/",
-        "c:/Users/chrom/.vscode/extensions/nameouschangey.lifeboatapi-0.0.33/assets/lua/Common/",
-        "c:/Users/chrom/.vscode/extensions/nameouschangey.lifeboatapi-0.0.33/assets/lua/Microcontroller/",
-        "c:/Users/chrom/Documents/VsCodeStormworks/_build/libs/"
+        "/Users/chromatischer/Documents/CodeWorks/VsCodeStormworks/",
+        "/Users/chromatischer/.vscode/extensions/nameouschangey.lifeboatapi-0.0.33/assets/lua/Common/",
+        "/Users/chromatischer/.vscode/extensions/nameouschangey.lifeboatapi-0.0.33/assets/lua/Microcontroller/",
+        "/Users/chromatischer/Documents/Stormworks-Libraries/Utils/",
+        "C:/Users/chrom/Documents/Stormworks-Libraries/Utils/",
+        "/Users/chromatischer/Documents/CodeWorks/VsCodeStormworks/_build/libs/"
     ],
     "CodeGPT.apiKey": "CodeGPT Plus Beta",
     "lifeboatapi.stormworks.libs.gitLibraries": [
