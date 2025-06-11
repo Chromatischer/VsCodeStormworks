@@ -54,11 +54,21 @@ end
 -- B-3: Touch II
 --#endregion
 
+require("Vectors.Vectors")
+require("Radar.BestTrackAlgorithm")
+require("Radar.radarToGlobalCoordinates")
+
+
 worldPos = Vec3(0, 0, 0) --TODO: Read in and remove this redundant declaration!
 
 rawRadarData = {}
-contacts = {}
-tracks = {} ---@type table<Track>
+radarRotation = 0 ---@type number Radar rotation, normalized to rad
+MAX_SEPERATION = 50 ---@type number
+LIFESPAN = 20 ---@type number Lifespan till track deprecation in seconds
+contacts = {} ---@type Vec3[]
+tracks = {} ---@type Track[]
+
+intercepts = {} --TODO: Maybe?
 
 ticks = 0
 function onTick()
@@ -87,7 +97,15 @@ function onTick()
         end
     end
 
+    tracks = updateTrackT(tracks) ---@type Track[]
+
+    if #contacts ~= 0 then -- Now possible through the use of the Hungarian algorithm
+        -- This is the complete solution: updating, deleting and creating in one! Amazing
+        tracks = hungarianTrackingAlgorithm(contacts, tracks, MAX_SEPERATION, LIFESPAN * 60, {})
+        contacts = {} -- Clear contacts!
+    end
 end
 
 function onDraw()
+    --TODO: Draw that shit to the screen!
 end
