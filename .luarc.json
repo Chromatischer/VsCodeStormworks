@@ -1,0 +1,15 @@
+
+{
+  "workspace": {
+    "checkThirdParty": false,
+    "library": [
+      "/Users/chromatischer/Documents/Stormworks-Libraries"
+    ]
+  },
+  "runtime": {
+    "version": "LuaJIT"
+  },
+    "diagnostics.disable": [
+        "lowercase-global"
+    ]
+}
