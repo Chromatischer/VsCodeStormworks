@@ -1,15 +1,1 @@
-
-{
-  "workspace": {
-    "checkThirdParty": false,
-    "library": [
-      "/Users/chromatischer/Documents/Stormworks-Libraries"
-    ]
-  },
-  "runtime": {
-    "version": "LuaJIT"
-  },
-    "diagnostics.disable": [
-        "lowercase-global"
-    ]
-}
+{"Lua.diagnostics.disable": ["lowercase-global"], "Lua": {"workspace": {"library": ["/Users/chromatischer/.config/nvim/lua/sw-micro-project/lua/common/nameouschangey/MicroController/microcontroller.lua", "/Users/chromatischer/Documents/Stormworks-Libraries/Utils/", "/Users/chromatischer/.config/nvim/lua/sw-micro-project/lua/common/chromatischer/Debug/debug.lua"], "useGitIgnore": true}}}

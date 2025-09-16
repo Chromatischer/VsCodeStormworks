@@ -6,82 +6,121 @@
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
 --#region CH Layout
--- N-1: Global Scale
--- N-2: GPS X
--- N-3: GPS Y
--- N-4: GPS Z
--- N-5: Vessel Angle
--- N-6: Screen Select I
--- N-7: Screen Select II
--- N-8: Touch X I
--- N-9: Touch Y I
--- N-10: Touch X II
--- N-11: Touch Y II
+-- CH1: GPS X
+-- CH2: GPS Y
+-- CH3: GPS Z
+-- CH4: Vessel Angle
+-- CH5: Global Scale
+-- CH6: Screen Center X
+-- CH7: Screen Center Y
+-- CH8: Touch X
+-- CH9: Touch Y
+-- CH10: Radar Rotation
+-- CH11-22: Contact Data (4 channels per contact: distance, azimuth, elevation, timeSinceDetected)
+-- CH13: ???
 
--- B-1: Global Darkmode
--- B-2: Touch I
--- B-3: Touch II
+-- CHB1: Is Depressed
+-- CHB2: Global Darkmode
+-- CHB3: Self Is Selected
+-- CHB4-6: Target Detected Status (1 per contact)
 --#endregion
 
 require("Vectors.Vectors")
 require("Radar.BestTrackAlgorithm")
 require("Radar.radarToGlobalCoordinates")
+require("Utils")
+require("Color")
+require("DrawAddons")
+require("Vectors.vec2")
+require("Vectors.vec3")
 
-worldPos = Vec3(0, 0, 0) --TODO: Read in and remove this redundant declaration!
-
-rawRadarData = {}
-radarRotation = 0 ---@type number Radar rotation, normalized to rad
+rawRadarData = { Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0) } ---@type Vec3[]
 MAX_SEPERATION = 50 ---@type number
 LIFESPAN = 20 ---@type number Lifespan till track deprecation in seconds
 contacts = {} ---@type Vec3[]
 tracks = {} ---@type Track[]
-
-intercepts = {} --TODO: Maybe?
 
 -- Display variables
 renderDepression = 20 ---@type integer Pixel amount the vessel icon should be depressed by on the rectangular screen portion
 dirUp = 0 ---@type number Radians Direction that is Upwards for the radar
 mapDiameter = 10 ---@type number Total diameter that the screen should display in km
 
+vesselPos = Vec3()
+vesselAngle = 0
+compas = 0
+finalZoom = 1
+screenCenter = Vec2()
+radarRotation = 0
+isDepressed = false
+CHDarkmode = false
+SelfIsSelected = false
+vesselPitch = 0
+
 ticks = 0
 function onTick()
 	ticks = ticks + 1
 
-	dataOffset = 11
-	boolOffset = 5
-	for i = 0, 3 do
-		distance = input.getNumber(i * 4 + dataOffset)
-		targetDetected = input.getBool(i + boolOffset)
-		timeSinceDetected = input.getNumber(i * 4 + 3 + dataOffset)
-		relPos = radarToRelativeVec3(
-			distance,
-			input.getNumber(i * 4 + 1 + dataOffset),
-			input.getNumber(i * 4 + 2 + dataOffset),
-			compas,
-			input.getNumber(13)
-		)
-		tgt = rawRadarData[i + 1]
+	-- Read primary inputs
+	vesselPos = Vec3(input.getNumber(1), input.getNumber(2), input.getNumber(3))
+	vesselAngle = input.getNumber(4)
+	finalZoom = input.getNumber(5)
+	screenCenter = Vec2(input.getNumber(6), input.getNumber(7))
+	touchX = input.getNumber(8) -- Not used in current Y version
+	touchY = input.getNumber(9) -- Not used in current Y version
+	radarRotation = input.getNumber(10)
 
-		if timeSinceDetected ~= 0 then
-			-- Using target smoothing like Smithy
-			-- new = old + ((new - old) / n)
-			rawRadarData[i + 1] = addVec3(tgt, scaleDivideVec3(subVec3(relPos, tgt), timeSinceDetected))
+	-- Read boolean inputs
+	isDepressed = input.getBool(1)
+	CHDarkmode = input.getBool(2)
+	SelfIsSelected = input.getBool(3)
 
-			-- Using recursive averaging
-			-- new = ((old * n-1) + new) / n
-			-- rawRadarData[i + 1] = tgt and scaleDivideVec3(addVec3(relPos, scaleVec3(tgt, timeSinceDetected - 1)), timeSinceDetected) or relPos
-		elseif tgt then --Check that there is a contact at the postion.
-			table.insert(contacts, addVec3(worldPos, tgt))
-			rawRadarData[i + 1] = nil
+	-- Only process radar data if self is selected
+	if SelfIsSelected then
+		compas = (vesselAngle - 180) / 360 -- Convert to radians
+
+		dataOffset = 11
+		boolOffset = 4
+
+		-- Process each contact (0 to 2 for 3 contacts)
+		for i = 0, 2 do
+			distance = input.getNumber(i * 4 + dataOffset)
+			targetDetected = input.getBool(i + boolOffset)
+			timeSinceDetected = input.getNumber(i * 4 + 3 + dataOffset)
+
+			-- Calculate target relative position then convert to world position
+			tgtRelativePos = radarToGlobalCoordinates(
+				distance,
+				input.getNumber(i * 4 + 1 + dataOffset), -- azimuth
+				input.getNumber(i * 4 + 2 + dataOffset), -- elevation
+				vesselPos,
+				radarRotation,
+				vesselPitch
+			)
+			tgtWorldPos = addVec3(tgtRelativePos, vesselPos)
+
+			-- Get the existing radar data point
+			tgt = rawRadarData[i + 1] or Vec3(0, 0, 0)
+
+			if timeSinceDetected ~= 0 then
+				-- Using recursive averaging formula for smoothing
+				-- new = ((old * n-1) + new) / n
+				rawRadarData[i + 1] =
+					scaleDivideVec3(addVec3(tgtWorldPos, scaleVec3(tgt, timeSinceDetected - 1)), timeSinceDetected)
+			elseif vec3length(tgtWorldPos) > 50 then -- Only add if distance is significant
+				-- Add to contacts for tracking
+				table.insert(contacts, tgtWorldPos)
+				rawRadarData[i + 1] = Vec3(0, 0, 0) -- Reset raw data
+			end
 		end
-	end
 
-	tracks = updateTrackT(tracks) ---@type Track[]
+		-- Update tracks with contacts
+		tracks = updateTrackT(tracks)
 
-	if #contacts ~= 0 then -- Now possible through the use of the Hungarian algorithm
-		-- This is the complete solution: updating, deleting and creating in one! Amazing
-		tracks = hungarianTrackingAlgorithm(contacts, tracks, MAX_SEPERATION, LIFESPAN * 60, {})
-		contacts = {} -- Clear contacts!
+		if #contacts > 0 then
+			-- Use Hungarian algorithm for tracking
+			tracks = hungarianTrackingAlgorithm(contacts, tracks, MAX_SEPERATION, LIFESPAN * 60, {})
+			contacts = {} -- Clear contacts after processing
+		end
 	end
 end
 
@@ -103,7 +142,7 @@ function onDraw()
 	radarMidPointY = 80 + renderDepression
 
 	---Translates a Worldspace Position to a Screenspace position
-	---@param world Vec2 Worldposition
+	---@param world Vec2 | Vec3 Worldposition
 	---@param center Vec2 Worldposition where the Map is centered
 	---@param updir number (rad) The direction that should be upward on screen
 	---@param scale number (m) Diameter of the entire Map
@@ -125,5 +164,8 @@ function onDraw()
 		--
 		return transformScalar(relative, math.atan(relative.y, relative.x) - updir, vec2length(relative) / scale)
 	end
+
 	--TODO: Render tracks
+
+	vesselScreenPos = transformWS(vesselPos, screenCenter, dirUp, globalScales[globalScale])
 end

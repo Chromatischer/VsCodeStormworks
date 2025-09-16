@@ -4,3 +4,6 @@ Docs/Documentation.pdf
 todomd.defaultFile
 ProjectUltramodern/.hidden
 .vscode/settings.json
+_intermediate/
+_release/
+.microproject
