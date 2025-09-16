@@ -1,3 +1,9 @@
-<h1>Readme</h1>
+# VsCodeStormworks
 
-I am working on a multitude of Stormworks microcontroller projects on this repository for detailed documentation see: ``Docs/Documentation.md``
+This repository contains Lua scripts and systems for Stormworks development.
+
+- Source code is organized under `src/`
+- Project-specific code lives in `src/projects/`
+- Documentation lives in `docs/` (see `docs/Documentation.md`)
+- Tests are in `tests/`
+
