@@ -5,7 +5,6 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
---#region CH Layout
 -- CH1: GPS X
 -- CH2: GPS Y
 -- CH3: GPS Z
@@ -33,9 +32,10 @@ require("Color")
 require("DrawAddons")
 require("Vectors.vec2")
 require("Vectors.vec3")
+require("Matrix.Matrix")
 
 rawRadarData = { Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0) } ---@type Vec3[]
-MAX_SEPERATION = 50 ---@type number
+MAX_SEPERATION = 100 ---@type number
 LIFESPAN = 20 ---@type number Lifespan till track deprecation in seconds
 contacts = {} ---@type Vec3[]
 tracks = {} ---@type Track[]
@@ -55,6 +55,9 @@ isDepressed = false
 CHDarkmode = false
 SelfIsSelected = false
 vesselPitch = 0
+
+globalScales = { 0.1, 0.2, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50 }
+globalScale = 4
 
 ticks = 0
 function onTick()
@@ -116,11 +119,16 @@ function onTick()
 		-- Update tracks with contacts
 		tracks = updateTrackT(tracks)
 
-		if #contacts > 0 then
+		if radarRotation < 0.01 and #contacts > 0 then
 			-- Use Hungarian algorithm for tracking
 			tracks = hungarianTrackingAlgorithm(contacts, tracks, MAX_SEPERATION, LIFESPAN * 60, {})
+			print(#tracks)
 			contacts = {} -- Clear contacts after processing
 		end
+	end
+
+	for _, track in ipairs(tracks) do
+		print(trackToString(track))
 	end
 end
 
@@ -168,4 +176,24 @@ function onDraw()
 	--TODO: Render tracks
 
 	vesselScreenPos = transformWS(vesselPos, screenCenter, dirUp, globalScales[globalScale])
+
+	screen.setColor(255, 255, 255)
+	for _, track in ipairs(tracks) do
+		screen.drawText(1, 7 * (_ - 1), trackToString(track))
+	end
+end
+
+---@return MicrocontrollerConfig & { input_simulator?: InputSimulator, input_simulator_config?: table }
+function onAttatch()
+	return {
+		tick = 60,
+		tiles = { x = 7, y = 5 },
+		scale = 3,
+		debugCanvas = true,
+		debugCanvasSize = { w = 320, h = 320 },
+		-- Attach an input simulator (function-form or table-form module)
+		---@type InputSimulator
+		input_simulator = require("src.projects.ChromaMultiSystem.TWS-Iteration-Y.attatch"),
+		input_simulator_config = { n_base = 11, b_base = 4, rot_deg = 60 },
+	}
 end
